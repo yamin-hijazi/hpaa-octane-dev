@@ -196,7 +196,9 @@ public final class RunListenerImpl extends RunListener<Run> {
 			final SCM scm = ((AbstractBuild) r).getProject().getScm();
 			if (scm != null) {
 				SCMProcessor scmProcessor = SCMProcessors.getAppropriate(scm.getClass().getName());
-				commonOriginRevision = scmProcessor.getCommonOriginRevision(r);
+				if (scmProcessor != null) {
+                    commonOriginRevision = scmProcessor.getCommonOriginRevision(r);
+                }
 			}
 		}
 		return commonOriginRevision;
