@@ -391,6 +391,31 @@ public class CIJenkinsServicesImpl extends CIPluginServicesBase {
 		}
 	}
 
+	@Override
+	public InputStream getVulnerabilitiesScanResultStream(String jobCiId, String buildCiId) {
+		Run build = getBuildFromQueueItem(jobCiId, buildCiId);
+		if (build != null) {
+			return getVulnerabilitiesScanFile(build);
+		} else {
+			return null;
+		}
+	}
+
+	private InputStream getVulnerabilitiesScanFile(Run run) {
+		InputStream result = null;
+		String vulnerabilitiesScanFilePath = run.getLogFile().getParent() + File.separator + "securityScan.json";
+		File vulnerabilitiesScanFile = new File(vulnerabilitiesScanFilePath);
+		if (!vulnerabilitiesScanFile.exists()) {
+			logger.error("failed to transfer vulnerabilities Scan File for " + run);
+		}
+		try {
+			result = new FileInputStream(vulnerabilitiesScanFilePath);
+		} catch (IOException ioe) {
+			logger.error("failed to obtain  vulnerabilities Scan File for " + run);
+		}
+		return result;
+	}
+
 	private InputStream getOctaneLogFile(Run run) {
 		InputStream result = null;
 		String octaneLogFilePath = run.getLogFile().getParent() + File.separator + "octane_log";
