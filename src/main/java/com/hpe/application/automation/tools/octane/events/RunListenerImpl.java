@@ -170,6 +170,8 @@ public final class RunListenerImpl extends RunListener<Run> {
 					.setProjectDisplayName(BuildHandlerUtils.getJobCiId(r));
 		}
 		OctaneSDK.getInstance().getEventsService().publishEvent(event);
+		SSCListener sscListener = new SSCListener();
+		sscListener.handleSSC(r);
 	}
 
 

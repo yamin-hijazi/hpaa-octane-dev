@@ -50,6 +50,8 @@ public class OctaneServerSettingsModel {
     private Secret password;
     private String impersonatedUser;
     private boolean suspend;
+    private boolean usesFortifySSC;
+    private String sscBaseToken;
 
     // inferred from uiLocation
     private String location;
@@ -76,7 +78,20 @@ public class OctaneServerSettingsModel {
     public void setSuspend(boolean suspend){
         this.suspend = suspend;
     }
-
+    public String getSscBaseToken(){
+        return this.sscBaseToken;
+    }
+    @DataBoundSetter
+    public void setSscBaseToken(String sscBaseToken){
+        this.sscBaseToken = sscBaseToken;
+    }
+    @DataBoundSetter
+    public void setUsesFortifySSC(boolean usesSsc){
+        this.usesFortifySSC = usesSsc;
+    }
+    public boolean getUsesFortifySSC(){
+        return this.usesFortifySSC;
+    }
     public String getUiLocation() {
         return uiLocation;
     }
