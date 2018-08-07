@@ -22,6 +22,11 @@ import java.util.Map;
  */
 public class SSCListener {
 
+    public static String SEVERITY_LG_NAME_LOW = "list_node.severity.low";
+    public static String SEVERITY_LG_NAME_MEDIUM = "list_node.severity.medium";
+    public static String SEVERITY_LG_NAME_HIGH = "list_node.severity.high";
+    public static String SEVERITY_LG_NAME_CRITICAL = "list_node.severity.urgent";
+
     static class ProjectVersion {
         public String project;
         public String version;
@@ -83,6 +88,9 @@ public class SSCListener {
             octaneIssue.set_extended_data(extendedData);
             octaneIssue.set_primary_location_full(issue.primaryLocation);
             octaneIssue.set_line(issue.lineNumber);
+            octaneIssue.setRemote_id(issue.issueInstanceId);
+            octaneIssue.setIntroduced_date(issue.foundDate);
+            octaneIssue.setExternal_link(issue.hRef);
         }
     }
 
@@ -142,11 +150,35 @@ public class SSCListener {
 
     private void setOctaneSeverity(DTOFactory dtoFactory, Issues.Issue issue, OctaneIssue octaneIssue) {
         if (issue.severity != null) {
-            String listNodeId = "list_node.severity." + issue.severity.toLowerCase();
-            octaneIssue.set_severity(createListNodeEntity(dtoFactory, listNodeId));
+            String octaneSeverity = getOctaneSeverityFromSSCValue(issue.severity);
+            octaneIssue.set_severity(createListNodeEntity(dtoFactory, octaneSeverity));
         }
     }
+    private String getOctaneSeverityFromSSCValue(String severity) {
+        if (severity == null) {
+            return null;
+        }
+        String logicalNameForSeverity = null;
+        if (severity.startsWith("4")) {
+            logicalNameForSeverity = SEVERITY_LG_NAME_CRITICAL;
+        }
+        if (severity.startsWith("3")) {
+            logicalNameForSeverity = SEVERITY_LG_NAME_HIGH;
+        }
+        if (severity.startsWith("2")) {
+            logicalNameForSeverity = SEVERITY_LG_NAME_MEDIUM;
+        }
+        if (severity.startsWith("1")) {
+            logicalNameForSeverity = SEVERITY_LG_NAME_LOW;
+        }
+
+        return logicalNameForSeverity;
+
+    }
     private static Entity createListNodeEntity(DTOFactory dtoFactory, String id) {
+        if(id == null){
+            return null;
+        }
         return dtoFactory.newDTO(Entity.class).setType("list_node").setId(id);
     }
 
