@@ -12,10 +12,7 @@ import hudson.model.AbstractProject;
 import hudson.model.Run;
 import hudson.tasks.Publisher;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by hijaziy on 7/23/2018.
@@ -79,18 +76,20 @@ public class SSCListener {
             return;
         }
         DTOFactory dtoFactory = DTOFactory.getInstance();
+        List<OctaneIssue> octaneIssues = new ArrayList<>();
         for (Issues.Issue issue : issues.data) {
             OctaneIssue octaneIssue = dtoFactory.newDTO(OctaneIssue.class);
             setOctaneAnalysis(dtoFactory, issue, octaneIssue);
             setOctaneSeverity(dtoFactory, issue, octaneIssue);
             setOctaneStatus(dtoFactory, issue, octaneIssue);
             Map extendedData = getExtendedData(issue);
-            octaneIssue.set_extended_data(extendedData);
-            octaneIssue.set_primary_location_full(issue.primaryLocation);
-            octaneIssue.set_line(issue.lineNumber);
+            octaneIssue.setExtended_data(extendedData);
+            octaneIssue.setPrimary_location_full(issue.primaryLocation);
+            octaneIssue.setLine(issue.lineNumber);
             octaneIssue.setRemote_id(issue.issueInstanceId);
             octaneIssue.setIntroduced_date(issue.foundDate);
             octaneIssue.setExternal_link(issue.hRef);
+            octaneIssues.add(octaneIssue);
         }
     }
 
@@ -112,7 +111,7 @@ public class SSCListener {
             analysisId = "list_node.issue_analysis_node.reviewed";
         }
         if (analysisId != null) {
-            octaneIssue.set_analysis(createListNodeEntity(dtoFactory, analysisId));
+            octaneIssue.setAnalysis(createListNodeEntity(dtoFactory, analysisId));
         }
 
     }
@@ -121,11 +120,11 @@ public class SSCListener {
         if (issue.scanStatus != null) {
             String listNodeId = "list_node.issue_state_node." + issue.scanStatus.toLowerCase();
             if (isLegalOctaneState(issue.scanStatus)) {
-                octaneIssue.set_state(createListNodeEntity(dtoFactory, listNodeId));
+                octaneIssue.setState(createListNodeEntity(dtoFactory, listNodeId));
             }
         }
         if(issue.removed != null && issue.removed){
-            octaneIssue.set_state(createListNodeEntity(dtoFactory, "list_node.issue_state_node.closed"));
+            octaneIssue.setState(createListNodeEntity(dtoFactory, "list_node.issue_state_node.closed"));
         }
     }
 
@@ -151,7 +150,7 @@ public class SSCListener {
     private void setOctaneSeverity(DTOFactory dtoFactory, Issues.Issue issue, OctaneIssue octaneIssue) {
         if (issue.severity != null) {
             String octaneSeverity = getOctaneSeverityFromSSCValue(issue.severity);
-            octaneIssue.set_severity(createListNodeEntity(dtoFactory, octaneSeverity));
+            octaneIssue.setSeverity(createListNodeEntity(dtoFactory, octaneSeverity));
         }
     }
     private String getOctaneSeverityFromSSCValue(String severity) {
