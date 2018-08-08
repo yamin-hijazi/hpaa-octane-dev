@@ -60,7 +60,8 @@ public class SSCListener {
 
         Issues issues = sscConnector.readIssuesOfLastestScan(projectVersion);
         List<OctaneIssue> octaneIssues = createOctaneIssues(issues);
-        IssuesFileSerializer.serialize(octaneIssues);
+        IssuesFileSerializer issuesFileSerializer = new IssuesFileSerializer(r,octaneIssues);
+        issuesFileSerializer.doSerialize();
 
         //fortify
         //1. get the summery data
