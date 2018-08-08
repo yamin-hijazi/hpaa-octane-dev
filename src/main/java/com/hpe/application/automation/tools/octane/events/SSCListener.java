@@ -23,6 +23,7 @@ public class SSCListener {
     public static String SEVERITY_LG_NAME_MEDIUM = "list_node.severity.medium";
     public static String SEVERITY_LG_NAME_HIGH = "list_node.severity.high";
     public static String SEVERITY_LG_NAME_CRITICAL = "list_node.severity.urgent";
+    public static String EXTERNAL_TOOL_NAME =  "external tool";
 
     static class ProjectVersion {
         public String project;
@@ -58,7 +59,9 @@ public class SSCListener {
 //        }
 
         Issues issues = sscConnector.readIssuesOfLastestScan(projectVersion);
-        createOctaneIssues(issues);
+        List<OctaneIssue> octaneIssues = createOctaneIssues(issues);
+        IssuesFileSerializer.serialize(octaneIssues);
+
         //fortify
         //1. get the summery data
         //2. use summery data (if relevant ) and try get last scan from SSC
@@ -71,9 +74,9 @@ public class SSCListener {
 
     }
 
-    private void createOctaneIssues(Issues issues) {
+    private List<OctaneIssue> createOctaneIssues(Issues issues) {
         if(issues == null){
-            return;
+            return new ArrayList<>();
         }
         DTOFactory dtoFactory = DTOFactory.getInstance();
         List<OctaneIssue> octaneIssues = new ArrayList<>();
@@ -89,8 +92,11 @@ public class SSCListener {
             octaneIssue.setRemote_id(issue.issueInstanceId);
             octaneIssue.setIntroduced_date(issue.foundDate);
             octaneIssue.setExternal_link(issue.hRef);
+            octaneIssue.setTool_name(EXTERNAL_TOOL_NAME);
             octaneIssues.add(octaneIssue);
         }
+
+        return octaneIssues;
     }
 
     private void setOctaneAnalysis(DTOFactory dtoFactory, Issues.Issue issue, OctaneIssue octaneIssue) {
@@ -119,7 +125,7 @@ public class SSCListener {
     private void setOctaneStatus(DTOFactory dtoFactory, Issues.Issue issue, OctaneIssue octaneIssue) {
         if (issue.scanStatus != null) {
             String listNodeId = "list_node.issue_state_node." + issue.scanStatus.toLowerCase();
-            if (isLegalOctaneState(issue.scanStatus)) {
+            if (isLegalOctaneState(listNodeId)) {
                 octaneIssue.setState(createListNodeEntity(dtoFactory, listNodeId));
             }
         }
