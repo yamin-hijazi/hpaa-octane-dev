@@ -22,18 +22,13 @@
 
 package com.microfocus.application.automation.tools.octane.events;
 
-import com.hp.octane.integrations.OctaneSDK;
-import com.microfocus.application.automation.tools.octane.configuration.ConfigurationService;
-import com.microfocus.application.automation.tools.octane.tests.build.BuildHandlerUtils;
+import com.google.inject.Inject;
+import com.microfocus.application.automation.tools.octane.vulnerabilities.VulnerabilitiesListener;
 import hudson.Extension;
 import hudson.model.Run;
 import hudson.model.listeners.RunListener;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
 
 /**
  * Created by dshmaya on 25/07/2018
@@ -43,68 +38,13 @@ import java.io.PrintWriter;
 @Extension
 public class SSMListenerImpl extends RunListener<Run> {
 	private static Logger logger = LogManager.getLogger(SSMListenerImpl.class);
+	@Inject
+	VulnerabilitiesListener vulnerabilitiesListener;
 
 	@Override
 	public void onFinalized(Run run) {
-		if (ConfigurationService.getModel().isSuspend()) {
-			return;
-		}
-		saveReport(run);
 
-		if (ConfigurationService.getServerConfiguration() != null && ConfigurationService.getServerConfiguration().isValid()) {
-			String jobCiId = BuildHandlerUtils.getJobCiId(run);
-			String buildCiId = BuildHandlerUtils.getBuildCiId(run);
-			logger.info("enqueued build '" + jobCiId + " #" + buildCiId + "' for Security Scan submission");
-			OctaneSDK.getInstance().getVulnerabilitiesService().enqueuePushVulnerabilitiesScanResult(jobCiId, buildCiId);
-		} else {
-			logger.warn("Octane configuration is not valid");
-		}
-	}
-
-	private void saveReport(Run run) {
-		String vulnerabilitiesScanFilePath = run.getLogFile().getParent() + File.separator + "securityScan.json";
-		try (PrintWriter out = new PrintWriter(vulnerabilitiesScanFilePath)) {
-			out.write("{\n" +
-					"  \"data\": [\n" +
-					"    {\n" +
-					"      \"severity\": {        \"type\": \"list_node\",        \"id\": \"list_node.severity.low\"      },\n" +
-					"      \"package\": \"hp.com\",\n" +
-					"      \"line\": 10,\n" +
-					"      \"remote_id\": \"1034\",\n" +
-					"      \"primary_location_full\": \"commitsRuleEngine.java\",\n" +
-					"      \"introduced_date\": \"2018-06-03T14:06:58Z\",\n" +
-					"      \"owner_email\":\"daniel.shmaya@hpe.com\",\n" +
-					"      \"state\": {        \"type\": \"list_node\",        \"id\": \"list_node.issue_state_node.closed\"      },\n" +
-					"      \"tool_type\": {        \"type\": \"list_node\",        \"id\": \"list_node.securityTool.fod\"      },\n" +
-					"      \"tool_name\": \"external tool\",\n" +
-					"      \"external_link\":\"some url here\",\n" +
-					"       \"analysis\": {        \"type\": \"list_node\",        \"id\": \"list_node.issue_analysis_node.maybe_an_issue\"      },\n" +
-					"       \"extended_data\" : {\"key\":\"value\",\"key\":\"value\"},\n" +
-					"      \"category\": \"category\"\n" +
-					"    }, {\n" +
-					"      \"severity\": {        \"type\": \"list_node\",        \"id\": \"list_node.severity.high\"      },\n" +
-					"      \"package\": \"hp.com.com\",\n" +
-					"      \"line\": 11,\n" +
-					"      \"remote_id\": \"1032\",\n" +
-					"      \"primary_location_full\": \"entities-factory.html\",\n" +
-					"      \"introduced_date\": \"2018-06-03T14:06:58Z\",\n" +
-					"      \"owner_email\":\"sa@nga\",\n" +
-					"      \"state\": {        \"type\": \"list_node\",        \"id\": \"list_node.issue_state_node.new\"      },\n" +
-					"      \"tool_type\": {        \"type\": \"list_node\",        \"id\": \"list_node.securityTool.fod\"      },\n" +
-					"      \"tool_name\": \"external too 2\",\n" +
-					"      \"external_link\":\"some url here 2\",\n" +
-					"       \"analysis\": {        \"type\": \"list_node\",        \"id\": \"list_node.issue_analysis_node.reviewed\"      },\n" +
-					"       \"extended_data\" : {\"key1\":\"value1\",\"key2\":\"value2\"},\n" +
-					"      \"category\": \"category 2\"\n" +
-					"    }\n" +
-					"  ]\n" +
-					"}");
-
-			out.flush();
-			out.close();
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
+		vulnerabilitiesListener.processBuild(run);
 	}
 
 

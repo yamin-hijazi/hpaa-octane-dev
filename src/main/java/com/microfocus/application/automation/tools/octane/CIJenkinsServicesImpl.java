@@ -42,6 +42,7 @@ import com.hp.octane.integrations.dto.tests.TestsResult;
 import com.hp.octane.integrations.exceptions.ConfigurationException;
 import com.hp.octane.integrations.exceptions.PermissionException;
 import com.hp.octane.integrations.spi.CIPluginServicesBase;
+import com.hpe.application.automation.tools.octane.events.SSCHandler;
 import com.microfocus.application.automation.tools.model.OctaneServerSettingsModel;
 import com.microfocus.application.automation.tools.octane.configuration.ConfigurationService;
 import com.microfocus.application.automation.tools.octane.configuration.ServerConfiguration;
@@ -70,12 +71,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.xml.bind.DatatypeConverter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.ArrayList;
@@ -393,20 +389,56 @@ public class CIJenkinsServicesImpl extends CIPluginServicesBase {
 
 	@Override
 	public InputStream getVulnerabilitiesScanResultStream(String jobCiId, String buildCiId) {
+
 		Run build = getBuildFromQueueItem(jobCiId, buildCiId);
-		if (build != null) {
-			return getVulnerabilitiesScanFile(build);
-		} else {
+		if(build==null){
+		    return null;
+        }
+		SSCHandler sscHandler = new SSCHandler(build);
+		//todo check if connection succeed
+		//check if scan already exists
+		InputStream result = null;
+		if (build == null) {
 			return null;
 		}
+		result = tryGetVulnerabilitiesScanFile(build);
+		if(result!=null){
+			return result;
+		}
+		//if file not exists yet , check if scan is finished and handle accordingly
+		boolean isScanFinished = sscHandler.getScanFinishStatus();
+		if(!isScanFinished){
+			return null;
+		}
+		//scan finished :
+		//process scan
+		//save scan results inside build
+		sscHandler.getLatestScan();
+		return tryGetVulnerabilitiesScanFile(build);
 	}
 
 	private InputStream getVulnerabilitiesScanFile(Run run) {
 		InputStream result = null;
-		String vulnerabilitiesScanFilePath = run.getLogFile().getParent() + File.separator + "securityScan.json";
+		String vulnerabilitiesScanFilePath = run.getRootDir() + File.separator + "securityScan.json";
 		File vulnerabilitiesScanFile = new File(vulnerabilitiesScanFilePath);
 		if (!vulnerabilitiesScanFile.exists()) {
 			logger.error("failed to transfer vulnerabilities Scan File for " + run);
+		}else {
+			try {
+				result = new FileInputStream(vulnerabilitiesScanFilePath);
+			} catch (IOException ioe) {
+				logger.error("failed to obtain  vulnerabilities Scan File for " + run);
+			}
+		}
+		return result;
+	}
+
+	private InputStream tryGetVulnerabilitiesScanFile(Run run) {
+		InputStream result = null;
+		String vulnerabilitiesScanFilePath = run.getRootDir() + File.separator + "securityScan.json";
+		File vulnerabilitiesScanFile = new File(vulnerabilitiesScanFilePath);
+		if (!vulnerabilitiesScanFile.exists()) {
+			return null;
 		}
 		try {
 			result = new FileInputStream(vulnerabilitiesScanFilePath);
