@@ -50,7 +50,6 @@ public class OctaneServerSettingsModel {
     private Secret password;
     private String impersonatedUser;
     private boolean suspend;
-    private boolean usesFortifySSC;
     private String sscBaseToken;
 
     // inferred from uiLocation
@@ -63,11 +62,12 @@ public class OctaneServerSettingsModel {
     }
 
     @DataBoundConstructor
-    public OctaneServerSettingsModel(String uiLocation, String username, Secret password, String impersonatedUser) {
+    public OctaneServerSettingsModel(String uiLocation, String username, Secret password, String impersonatedUser,String sscBaseToken) {
         this.uiLocation = StringUtils.trim(uiLocation);
         this.username = username;
         this.password = password;
         this.impersonatedUser = impersonatedUser;
+        this.sscBaseToken = sscBaseToken;
     }
 
     public boolean isSuspend(){
@@ -81,16 +81,9 @@ public class OctaneServerSettingsModel {
     public String getSscBaseToken(){
         return this.sscBaseToken;
     }
-    @DataBoundSetter
+
     public void setSscBaseToken(String sscBaseToken){
         this.sscBaseToken = sscBaseToken;
-    }
-    @DataBoundSetter
-    public void setUsesFortifySSC(boolean usesSsc){
-        this.usesFortifySSC = usesSsc;
-    }
-    public boolean getUsesFortifySSC(){
-        return this.usesFortifySSC;
     }
     public String getUiLocation() {
         return uiLocation;

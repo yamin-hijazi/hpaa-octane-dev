@@ -180,12 +180,6 @@ public class OctaneServerSettingsBuilder extends Builder {
 					newModel.setIdentity(identity);
 				}
 			}
-			if (jsonObject.containsKey("usesFortifySSC")) {
-				JSONObject showSsc = (JSONObject) jsonObject.get("usesFortifySSC");
-				String sscBaseToken = showSsc.getString("sscBaseToken");
-				newModel.setUsesFortifySSC(true);
-				newModel.setSscBaseToken(sscBaseToken);
-			}
 			setModel(newModel);
 			return super.configure(req, formData);
 		}

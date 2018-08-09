@@ -48,7 +48,7 @@ public class SSCListener {
         String sscServer = ConfigurationService.getSSCServer();
         SSCFortifyConfigurations sscFortifyConfigurations = new SSCFortifyConfigurations();
         //"Basic QWRtaW46ZGV2c2Vjb3Bz"
-        sscFortifyConfigurations.baseToken = "Basic QWRtaW46ZGV2c2Vjb3BzMQ==";
+        sscFortifyConfigurations.baseToken = ConfigurationService.getModel().getSscBaseToken();
         sscFortifyConfigurations.projectName = project.project;
         sscFortifyConfigurations.projectVersion = project.version;
         sscFortifyConfigurations.serverURL = sscServer;
