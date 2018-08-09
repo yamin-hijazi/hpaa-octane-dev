@@ -12,6 +12,9 @@ import hudson.model.AbstractProject;
 import hudson.model.Run;
 import hudson.tasks.Publisher;
 
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -91,13 +94,31 @@ public class SSCListener {
             octaneIssue.setPrimary_location_full(issue.primaryLocation);
             octaneIssue.setLine(issue.lineNumber);
             octaneIssue.setRemote_id(issue.issueInstanceId);
-            octaneIssue.setIntroduced_date(issue.foundDate);
+            octaneIssue.setIntroduced_date(convertDates(issue.foundDate));
             octaneIssue.setExternal_link(issue.hRef);
             octaneIssue.setTool_name(EXTERNAL_TOOL_NAME);
             octaneIssues.add(octaneIssue);
         }
 
         return octaneIssues;
+    }
+
+    static private String convertDates(String inputFoundDate) {
+        if(inputFoundDate == null){
+            return null;
+        }
+        //"2017-02-12T12:31:44.000+0000"
+        DateFormat sourceDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss");
+        Date date = null;
+        try {
+            date = sourceDateFormat.parse(inputFoundDate);
+            //"2018-06-03T14:06:58Z"
+            SimpleDateFormat targetDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+            return targetDateFormat.format(date);
+        } catch (ParseException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     private void setOctaneAnalysis(DTOFactory dtoFactory, Issues.Issue issue, OctaneIssue octaneIssue) {
