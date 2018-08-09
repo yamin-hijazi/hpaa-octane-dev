@@ -26,7 +26,7 @@ public class SSCListener {
     public static String SEVERITY_LG_NAME_MEDIUM = "list_node.severity.medium";
     public static String SEVERITY_LG_NAME_HIGH = "list_node.severity.high";
     public static String SEVERITY_LG_NAME_CRITICAL = "list_node.severity.urgent";
-    public static String EXTERNAL_TOOL_NAME =  "external tool";
+    public static String EXTERNAL_TOOL_NAME =  "Fortify SSC";
 
     static class ProjectVersion {
         public String project;
