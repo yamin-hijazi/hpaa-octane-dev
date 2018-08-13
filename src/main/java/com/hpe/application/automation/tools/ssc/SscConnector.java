@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.hpe.application.automation.tools.octane.events.SSCFortifyConfigurations;
-import com.hpe.application.automation.tools.rest.RestClient;
+//import com.hpe.application.automation.tools.rest.RestClient;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequest;
