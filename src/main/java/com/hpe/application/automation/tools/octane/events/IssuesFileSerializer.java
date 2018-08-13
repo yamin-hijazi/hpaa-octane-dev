@@ -11,8 +11,8 @@ import java.util.List;
 import java.util.Map;
 
 public class IssuesFileSerializer {
-    Run run;
-    List<OctaneIssue> octaneIssues;
+    private Run run;
+    private List<OctaneIssue> octaneIssues;
     public IssuesFileSerializer(Run r, List<OctaneIssue> issues){
         this.run = r;
         this.octaneIssues = issues;
