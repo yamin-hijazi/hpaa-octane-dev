@@ -44,7 +44,7 @@ import java.util.List;
 public class VulnerabilitiesListener {
     private static Logger logger = LogManager.getLogger(VulnerabilitiesListener.class);
 
-    VulnerabilitiesService vulnerabilitiesService = OctaneSDK.getInstance().getVulnerabilitiesService();
+    private VulnerabilitiesService vulnerabilitiesService = OctaneSDK.getInstance().getVulnerabilitiesService();
 
 
     public void processBuild(Run run) {
