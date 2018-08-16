@@ -22,7 +22,7 @@ public class IssuesFileSerializer {
         try{
             Map dataFormat = new HashMap<>();
             dataFormat.put("data",octaneIssues);
-            String vulnerabilitiesScanFilePath = run.getLogFile().getParent() + File.separator + SSCHandler.SCAN_RESULT_FILE;
+            String vulnerabilitiesScanFilePath = run.getRootDir() + File.separator + SSCHandler.SCAN_RESULT_FILE;
             PrintWriter fw = new PrintWriter(vulnerabilitiesScanFilePath, "UTF-8");
             new ObjectMapper().writeValue(fw,dataFormat);
             fw.flush();

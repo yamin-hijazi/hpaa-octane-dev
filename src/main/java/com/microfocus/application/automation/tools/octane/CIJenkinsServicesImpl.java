@@ -395,7 +395,11 @@ public class CIJenkinsServicesImpl extends CIPluginServicesBase {
 		    return null;
         }
 		SSCHandler sscHandler = new SSCHandler(build);
-		//todo check if connection succeed
+		//check connection to ssc server
+		if(!sscHandler.isConnected()){
+			logger.warn("ssc is not connected, need to check all ssc configurations in order to continue with this task ");
+			return null;
+		}
 		//check if scan already exists
 		InputStream result = null;
 		if (build == null) {

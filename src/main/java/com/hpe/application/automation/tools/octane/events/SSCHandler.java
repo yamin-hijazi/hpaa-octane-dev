@@ -8,11 +8,14 @@ import com.hpe.application.automation.tools.ssc.ProjectVersions;
 import com.hpe.application.automation.tools.ssc.SscConnector;
 import com.microfocus.application.automation.tools.octane.configuration.ConfigurationService;
 import com.microfocus.application.automation.tools.octane.tests.build.BuildHandlerUtils;
+import com.microfocus.application.automation.tools.sse.common.StringUtils;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Descriptor;
 import hudson.model.Run;
 import hudson.tasks.Publisher;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.PrintWriter;
@@ -27,6 +30,7 @@ import java.util.*;
  */
 public class SSCHandler {
 
+    private final static Logger logger = LogManager.getLogger(SSCHandler.class);
     private SSCFortifyConfigurations sscFortifyConfigurations = new SSCFortifyConfigurations();
     private SscConnector sscConnector ;
     private ProjectVersions.ProjectVersion projectVersion;
@@ -56,20 +60,37 @@ public class SSCHandler {
 
     public SSCHandler(Run r) {
         run = r;
+        if (!(ConfigurationService.getServerConfiguration() != null && ConfigurationService.getServerConfiguration().isValid()) ||
+                ConfigurationService.getModel().isSuspend()) {
+            logger.warn("connection with Octane should be established before connection with ssc");
+            System.out.println("connection with Octane should be established before connection with ssc");
+            return;
+        }
         ProjectVersion project = getProjectVersion();
         String sscServer = getSSCServer();
+
 
         //"Basic QWRtaW46ZGV2c2Vjb3Bz"
         sscFortifyConfigurations.baseToken = ConfigurationService.getModel().getSscBaseToken();
         sscFortifyConfigurations.projectName = project.project;
         sscFortifyConfigurations.projectVersion = project.version;
         sscFortifyConfigurations.serverURL = sscServer;
-
-        sscConnector = new SscConnector(sscFortifyConfigurations);
-        if(sscConnector!=null) {
-            projectVersion = sscConnector.getProjectVersion();
+        if(StringUtils.isNullOrEmpty(sscFortifyConfigurations.baseToken)||
+                StringUtils.isNullOrEmpty(sscFortifyConfigurations.projectName)||
+                StringUtils.isNullOrEmpty(sscFortifyConfigurations.projectVersion)||
+                StringUtils.isNullOrEmpty(sscFortifyConfigurations.serverURL)){
+            logger.warn("missing one of the SSC configuration fields (baseToken\\project\\version\\serverUrl) will not continue connecting to the server");
+        }else {
+            sscConnector = new SscConnector(sscFortifyConfigurations);
+            if (sscConnector != null) {
+                projectVersion = sscConnector.getProjectVersion();
+            }
         }
 
+    }
+
+    public boolean isConnected(){
+        return sscConnector!=null;
     }
 
     public void getLatestScan() {
@@ -131,7 +152,7 @@ public class SSCHandler {
         }
     }
 
-    private void setOctaneAnalysis(DTOFactory dtoFactory, Issues.Issue issue, OctaneIssue octaneIssue) {
+    private void    setOctaneAnalysis(DTOFactory dtoFactory, Issues.Issue issue, OctaneIssue octaneIssue) {
 //        "issueStatus" : "Unreviewed", - analysis
 //        "audited" : false,- analysis
 //        "reviewed" : null, - analysis ?

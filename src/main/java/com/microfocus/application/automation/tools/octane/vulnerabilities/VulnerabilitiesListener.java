@@ -33,7 +33,6 @@ import hudson.tasks.Publisher;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.List;
 
@@ -43,73 +42,55 @@ import java.util.List;
 @Extension
 @SuppressWarnings({"squid:S2699", "squid:S3658", "squid:S2259", "squid:S1872"})
 public class VulnerabilitiesListener {
-	private static Logger logger = LogManager.getLogger(VulnerabilitiesListener.class);
+    private static Logger logger = LogManager.getLogger(VulnerabilitiesListener.class);
 
-	private static final String JENKINS_STORMRUNNER_LOAD_TEST_RUNNER_CLASS = "com.hpe.sr.plugins.jenkins.StormTestRunner";
-	private static final String JENKINS_STORMRUNNER_FUNCTIONAL_TEST_RUNNER_CLASS = "com.hpe.application.automation.tools.srf.run.RunFromSrfBuilder";
-	private static final String JENKINS_PERFORMANCE_CENTER_TEST_RUNNER_CLASS = "com.hpe.application.automation.tools.run.PcBuilder";
-
-	VulnerabilitiesService vulnerabilitiesService = OctaneSDK.getInstance().getVulnerabilitiesService();
+    VulnerabilitiesService vulnerabilitiesService = OctaneSDK.getInstance().getVulnerabilitiesService();
 
 
+    public void processBuild(Run run) {
+        String jobCiId = BuildHandlerUtils.getJobCiId(run);
+        String buildCiId = BuildHandlerUtils.getBuildCiId(run);
+        if (!onFinalizedValidations(run)) {
+            logger.warn("Octane configuration is not valid");
+            return;
+        }
 
-	public void processBuild(Run run) {
-		String jobCiId = BuildHandlerUtils.getJobCiId(run);
-		String buildCiId = BuildHandlerUtils.getBuildCiId(run);
-//		if (!onFinalizedValidations(jobCiId, buildCiId)) {
-//			logger.warn("Octane configuration is not valid");
-//			return;
-//		}
-		final List<Publisher> publishers = ((AbstractBuild) run).getProject().getPublishersList().toList();
-		for (Publisher publisher : publishers) {
-			if ("com.fortify.plugin.jenkins.FPRPublisher".equals(publisher.getClass().getName())) {
-				String projectName =  getFieldValueByReflection(publisher,"projectName");
-				String projectVersion =  getFieldValueByReflection(publisher,"projectVersion");
-				if(projectName!=null && projectVersion!=null){
-					vulnerabilitiesService.enqueuePushVulnerabilitiesScanResult(jobCiId,buildCiId);
-//					vulnerabilitiesService.enqueuePushVulnerabilitiesScanResult(jobCiId,String.valueOf(run.getNumber()-1));
-//					vulnerabilitiesService.enqueuePushVulnerabilitiesScanResult(jobCiId,String.valueOf(run.getNumber()-2));
-				}else{
-					logger.warn("couldn't extract projectName\\projectVersion from FPRPublisher");
-				}
-			}
-		}
+        vulnerabilitiesService.enqueuePushVulnerabilitiesScanResult(jobCiId, buildCiId);
+    }
 
 
-	}
+    private String getFieldValueByReflection(Object publisher, String fieldName) {
+        Class<?> clazz = publisher.getClass();
+        Field field = null; //Note, this can throw an exception if the field doesn't exist.
+        try {
+            field = clazz.getDeclaredField(fieldName);
+            org.springframework.util.ReflectionUtils.makeAccessible(field);
+            return field.get(publisher).toString();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 
+    private boolean onFinalizedValidations(Run run) {
 
-	private String getFieldValueByReflection(Object publisher,String fieldName) {
-		Class<?> clazz = publisher.getClass();
-		Field field = null; //Note, this can throw an exception if the field doesn't exist.
-		try {
-			field = clazz.getDeclaredField(fieldName);
-			org.springframework.util.ReflectionUtils.makeAccessible(field);
-			return field.get(publisher).toString();
-		} catch (IllegalAccessException e) {
-			e.printStackTrace();
-		} catch (NoSuchFieldException e) {
-			e.printStackTrace();
-		}
-		return null;
-	}
-
-	private boolean onFinalizedValidations(String jobCiId, String buildCiId){
-		try {
-			if (!(ConfigurationService.getServerConfiguration() != null && ConfigurationService.getServerConfiguration().isValid()) ||
-					ConfigurationService.getModel().isSuspend()) {
-				return false;
-			}
-			logger.info("enqueued build '" + jobCiId + " #" + buildCiId + "' for Security Scan submission");
-			if (!OctaneSDK.getInstance().getVulnerabilitiesService().isVulnerabilitiesRelevant(jobCiId, buildCiId)){
-				return false;
-			}
-		}catch (IOException e){
-			logger.warn("failed on Finalized Validations ",e);
-			return false;
-		}
-
-		return true;
-
-	}
+        if (!(ConfigurationService.getServerConfiguration() != null && ConfigurationService.getServerConfiguration().isValid()) ||
+                ConfigurationService.getModel().isSuspend()) {
+            return false;
+        }
+        final List<Publisher> publishers = ((AbstractBuild) run).getProject().getPublishersList().toList();
+        for (Publisher publisher : publishers) {
+            if ("com.fortify.plugin.jenkins.FPRPublisher".equals(publisher.getClass().getName())) {
+                String projectName = getFieldValueByReflection(publisher, "projectName");
+                String projectVersion = getFieldValueByReflection(publisher, "projectVersion");
+                if (projectName == null || projectVersion == null) {
+                    logger.warn("couldn't extract projectName\\projectVersion from FPRPublisher");
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 }
