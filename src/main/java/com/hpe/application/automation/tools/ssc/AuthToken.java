@@ -21,5 +21,7 @@ public class AuthToken  extends SscBaseEntitySingle<AuthToken.AuthTokenData> {
     public static class AuthTokenData {
         @JsonProperty("token")
         String token;
+        @JsonProperty("terminalDate")
+        String terminalDate;
     }
 }

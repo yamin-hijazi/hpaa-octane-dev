@@ -5,7 +5,8 @@ import com.hp.octane.integrations.dto.SecurityScans.OctaneIssue;
 import com.hp.octane.integrations.dto.entities.Entity;
 import com.hpe.application.automation.tools.ssc.Issues;
 import com.hpe.application.automation.tools.ssc.ProjectVersions;
-import com.hpe.application.automation.tools.ssc.SscConnector;
+import com.hpe.application.automation.tools.ssc.SSCClientManager;
+import com.hpe.application.automation.tools.ssc.SscProjectConnector;
 import com.microfocus.application.automation.tools.octane.configuration.ConfigurationService;
 import com.microfocus.application.automation.tools.octane.tests.build.BuildHandlerUtils;
 import com.microfocus.application.automation.tools.sse.common.StringUtils;
@@ -32,7 +33,7 @@ public class SSCHandler {
 
     private final static Logger logger = LogManager.getLogger(SSCHandler.class);
     private SSCFortifyConfigurations sscFortifyConfigurations;
-    private SscConnector sscConnector ;
+    private SscProjectConnector sscProjectConnector;
     private ProjectVersions.ProjectVersion projectVersion;
     private String targetDir;
 
@@ -77,16 +78,16 @@ public class SSCHandler {
                 StringUtils.isNullOrEmpty(sscFortifyConfigurations.serverURL)){
             logger.warn("missing one of the SSC configuration fields (baseToken\\project\\version\\serverUrl) will not continue connecting to the server");
         }else {
-            sscConnector = new SscConnector(sscFortifyConfigurations);
-            if (sscConnector != null) {
-                projectVersion = sscConnector.getProjectVersion();
+            sscProjectConnector = SSCClientManager.instance().getProjectConnector(sscFortifyConfigurations);
+            if (sscProjectConnector != null) {
+                projectVersion = sscProjectConnector.getProjectVersion();
             }
         }
 
     }
 
     public boolean isConnected(){
-        return sscConnector!=null;
+        return sscProjectConnector !=null;
     }
 
     public void getLatestScan() {
@@ -98,7 +99,7 @@ public class SSCHandler {
             saveReport();
         }
 
-        Issues issues = sscConnector.readIssuesOfLastestScan(projectVersion);
+        Issues issues = sscProjectConnector.readIssuesOfLastestScan(projectVersion);
         List<OctaneIssue> octaneIssues = createOctaneIssues(issues);
         IssuesFileSerializer issuesFileSerializer = new IssuesFileSerializer(targetDir,octaneIssues);
         issuesFileSerializer.doSerialize();
