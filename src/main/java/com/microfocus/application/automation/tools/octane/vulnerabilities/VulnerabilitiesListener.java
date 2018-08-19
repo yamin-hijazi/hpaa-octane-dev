@@ -28,6 +28,7 @@ import com.microfocus.application.automation.tools.octane.configuration.Configur
 import com.microfocus.application.automation.tools.octane.tests.build.BuildHandlerUtils;
 import hudson.Extension;
 import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
 import hudson.model.Run;
 import hudson.tasks.Publisher;
 import org.apache.logging.log4j.LogManager;
@@ -46,7 +47,6 @@ public class VulnerabilitiesListener {
 
     private VulnerabilitiesService vulnerabilitiesService = OctaneSDK.getInstance().getVulnerabilitiesService();
 
-
     public void processBuild(Run run) {
         String jobCiId = BuildHandlerUtils.getJobCiId(run);
         String buildCiId = BuildHandlerUtils.getBuildCiId(run);
@@ -55,7 +55,9 @@ public class VulnerabilitiesListener {
             return;
         }
 
-        vulnerabilitiesService.enqueuePushVulnerabilitiesScanResult(jobCiId, buildCiId);
+        ProjectAndVersionJobConfig projectVersion = getProjectVersionInJobConfig(run);
+        vulnerabilitiesService.enqueuePushVulnerabilitiesScanResult(jobCiId, buildCiId, projectVersion.project,
+                projectVersion.version,run.getRootDir().getPath());
     }
 
 
@@ -92,5 +94,52 @@ public class VulnerabilitiesListener {
             }
         }
         return true;
+    }
+    static class ProjectAndVersionJobConfig {
+        public String project;
+        public String version;
+
+        public ProjectAndVersionJobConfig(String projectName, String projectVersion) {
+            this.project = projectName;
+            this.version = projectVersion;
+        }
+    }
+    private ProjectAndVersionJobConfig getProjectVersionInJobConfig(Run run) {
+        AbstractProject project = ((AbstractBuild) run).getProject();
+        for (Object publisherO : project.getPublishersList()) {
+            if (publisherO instanceof Publisher) {
+                Publisher publisher = (Publisher) publisherO;
+                publisher.getClass().getName().equals(
+                        "com.fortify.plugin.jenkins.FPRPublisher");
+                return getProjectNameByReflection(publisherO);
+            }
+        }
+        return null;
+    }
+
+    private ProjectAndVersionJobConfig getProjectNameByReflection(Object someObject) {
+        String projectName = getFieldValue(someObject, "projectName").toString();
+        String projectVersion = getFieldValue(someObject, "projectVersion").toString();
+        if (projectName != null && projectVersion != null) {
+            return new ProjectAndVersionJobConfig(projectName, projectVersion);
+        }
+        return null;
+    }
+    private Object getFieldValue(Object someObject, String fieldName) {
+        for (Field field : someObject.getClass().getDeclaredFields()) {
+            field.setAccessible(true);
+            if(field.getName().equals(fieldName)) {
+                Object value = null;
+                try {
+                    value = field.get(someObject);
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+                if (value != null) {
+                    return value;
+                }
+            }
+        }
+        return null;
     }
 }
