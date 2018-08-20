@@ -23,43 +23,44 @@ public class SSCClientManager {
 
 
     private static SSCClientManager _instance;
-
+    static {
+        _instance = new SSCClientManager();
+        _instance.initHttpClient();
+    }
     private static Object lockObj = new Object();
-    private AuthToken.AuthTokenData authToken;
+    private AuthToken.AuthTokenData authTokenData;
     private CloseableHttpClient httpClient;
 
+    private SSCClientManager(){
+
+    }
     public static SSCClientManager instance(){
-        if(_instance == null){
-            synchronized (lockObj){
-                _instance = new SSCClientManager();
-                _instance.initHttpClient();
-            }
-        }
         return _instance;
     }
     String getToken(SSCFortifyConfigurations sscCfgs){
-        boolean generateToken = false;
-        if(authToken == null) {
-            generateToken = true;
+        boolean invalidToken = false;
+        if(authTokenData == null) {
+            invalidToken = true;
         }else {
             //Calendar.getInstance
             Date tenMinsFromNow = new Date(System.currentTimeMillis() + 10 * 60 * 1000);
-            Date expired = SSCDateUtils.getDateFromDateString(authToken.terminalDate, SSCDateUtils.sscFormat);
+            Date expired = SSCDateUtils.getDateFromDateString(authTokenData.terminalDate, SSCDateUtils.sscFormat);
             if (expired.before(tenMinsFromNow)) {
-                generateToken = true;
+                invalidToken = true;
             }
         }
-        if(generateToken){
-            authToken = null;
+        if(invalidToken){
+            authTokenData = null;
             synchronized(lockObj) {
-                if(authToken == null) {
-                    sendReqAuth(sscCfgs);
+                if(authTokenData == null) {
+                    authTokenData = sendReqAuth(sscCfgs);
+
                 }
             }
         }
-        return this.authToken.token;
+        return this.authTokenData.token;
     }
-    private void sendReqAuth(SSCFortifyConfigurations sscCfgs) {
+    private AuthToken.AuthTokenData sendReqAuth(SSCFortifyConfigurations sscCfgs) {
         //"/{SSC Server Context}/api/v1"
         //String url = "http://" + serverURL + "/ssc/api/v1/projects?q=id:2743&fulltextsearch=true";
         String url = sscCfgs.serverURL + "/api/v1/tokens";
@@ -80,7 +81,7 @@ public class SSCClientManager {
                 String toString = isToString(response.getEntity().getContent());
                 com.hpe.application.automation.tools.ssc.AuthToken authToken = new ObjectMapper().readValue(toString,
                         TypeFactory.defaultInstance().constructType(com.hpe.application.automation.tools.ssc.AuthToken.class));
-                this.authToken = authToken.data;
+                return authToken.data;
             }
 
         } catch (IOException e) {
@@ -92,6 +93,7 @@ public class SSCClientManager {
                 HttpClientUtils.closeQuietly(response);
             }
         }
+        return null;
     }
     private void initHttpClient() {
 
