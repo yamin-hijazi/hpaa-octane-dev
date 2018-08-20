@@ -20,8 +20,8 @@ public class AuthToken  extends SscBaseEntitySingle<AuthToken.AuthTokenData> {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class AuthTokenData {
         @JsonProperty("token")
-        String token;
+        public String token;
         @JsonProperty("terminalDate")
-        String terminalDate;
+        public String terminalDate;
     }
 }

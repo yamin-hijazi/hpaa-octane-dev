@@ -32,7 +32,6 @@ import java.util.*;
 public class SSCHandler {
 
     private final static Logger logger = LogManager.getLogger(SSCHandler.class);
-    private SSCFortifyConfigurations sscFortifyConfigurations;
     private SscProjectConnector sscProjectConnector;
     private ProjectVersions.ProjectVersion projectVersion;
     private String targetDir;
@@ -63,7 +62,6 @@ public class SSCHandler {
         sscFortifyConfigurations.serverURL = ConfigurationService.getSSCServer();
 
         this.targetDir = targetDir;
-        this.sscFortifyConfigurations = sscFortifyConfigurations;
 
         if (!(ConfigurationService.getServerConfiguration() != null && ConfigurationService.getServerConfiguration().isValid()) ||
                 ConfigurationService.getModel().isSuspend()) {

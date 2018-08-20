@@ -37,7 +37,7 @@ public class SSCClientManager {
     public static SSCClientManager instance(){
         return _instance;
     }
-    String getToken(SSCFortifyConfigurations sscCfgs,boolean forceRenew){
+    public String getToken(SSCFortifyConfigurations sscCfgs,boolean forceRenew){
 
         if(forceRenew || checkCurrentTokenIsInvalid()){
             authTokenData = null;
