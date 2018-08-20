@@ -37,19 +37,9 @@ public class SSCClientManager {
     public static SSCClientManager instance(){
         return _instance;
     }
-    String getToken(SSCFortifyConfigurations sscCfgs){
-        boolean invalidToken = false;
-        if(authTokenData == null) {
-            invalidToken = true;
-        }else {
-            //Calendar.getInstance
-            Date tenMinsFromNow = new Date(System.currentTimeMillis() + 10 * 60 * 1000);
-            Date expired = SSCDateUtils.getDateFromDateString(authTokenData.terminalDate, SSCDateUtils.sscFormat);
-            if (expired.before(tenMinsFromNow)) {
-                invalidToken = true;
-            }
-        }
-        if(invalidToken){
+    String getToken(SSCFortifyConfigurations sscCfgs,boolean forceRenew){
+
+        if(forceRenew || checkCurrentTokenIsInvalid()){
             authTokenData = null;
             synchronized(lockObj) {
                 if(authTokenData == null) {
@@ -60,6 +50,21 @@ public class SSCClientManager {
         }
         return this.authTokenData.token;
     }
+
+    private boolean checkCurrentTokenIsInvalid() {
+        boolean invalidToken = false;
+        if(authTokenData == null) {
+            invalidToken = true;
+        }else {
+            Date tenMinsFromNow = new Date(System.currentTimeMillis() + 10 * 60 * 1000);
+            Date expired = SSCDateUtils.getDateFromDateString(authTokenData.terminalDate, SSCDateUtils.sscFormat);
+            if (expired.before(tenMinsFromNow)) {
+                invalidToken = true;
+            }
+        }
+        return invalidToken;
+    }
+
     private AuthToken.AuthTokenData sendReqAuth(SSCFortifyConfigurations sscCfgs) {
         //"/{SSC Server Context}/api/v1"
         //String url = "http://" + serverURL + "/ssc/api/v1/projects?q=id:2743&fulltextsearch=true";

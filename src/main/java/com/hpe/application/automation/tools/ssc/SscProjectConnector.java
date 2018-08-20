@@ -13,6 +13,7 @@ import java.io.IOException;
 
 import static com.hpe.application.automation.tools.ssc.SSCClientManager.getNetHost;
 import static com.hpe.application.automation.tools.ssc.SSCClientManager.isToString;
+import static com.hpe.application.automation.tools.ssc.SSCClientManager.succeeded;
 
 /**
  * Created by hijaziy on 7/12/2018.
@@ -36,13 +37,20 @@ public class SscProjectConnector {
 
         HttpGet request = new HttpGet(url);
         request.addHeader("Authorization", "FortifyToken " +
-                SSCClientManager.instance().getToken(sscFortifyConfigurations));
+                SSCClientManager.instance().getToken(sscFortifyConfigurations,false));
         request.addHeader("Accept", "application/json");
         request.addHeader("Host", getNetHost(sscFortifyConfigurations.serverURL));
 
         CloseableHttpResponse response = null;
         try {
             response = httpClient.execute(request);
+            //401. Access..
+            if(!succeeded(response.getStatusLine().getStatusCode())){
+                request.removeHeaders("Authorization");
+                request.addHeader("Authorization", "FortifyToken " +
+                        SSCClientManager.instance().getToken(sscFortifyConfigurations,false));
+                response = httpClient.execute(request);
+            }
             String toString = isToString(response.getEntity().getContent());
             return toString;
         } catch (IOException e) {
