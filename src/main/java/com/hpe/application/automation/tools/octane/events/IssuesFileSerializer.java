@@ -1,5 +1,6 @@
 package com.hpe.application.automation.tools.octane.events;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hp.octane.integrations.dto.SecurityScans.OctaneIssue;
 import hudson.model.Run;
@@ -24,7 +25,9 @@ public class IssuesFileSerializer {
             dataFormat.put("data",octaneIssues);
             String vulnerabilitiesScanFilePath = targetDir + File.separator + SSCHandler.SCAN_RESULT_FILE;
             PrintWriter fw = new PrintWriter(vulnerabilitiesScanFilePath, "UTF-8");
-            new ObjectMapper().writeValue(fw,dataFormat);
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+            mapper.writeValue(fw,dataFormat);
             fw.flush();
             fw.close();
         }catch(Exception e){
