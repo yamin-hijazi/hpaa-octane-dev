@@ -5,7 +5,8 @@ import com.hp.octane.integrations.dto.SecurityScans.OctaneIssue;
 import com.hp.octane.integrations.dto.entities.Entity;
 import com.hpe.application.automation.tools.ssc.Issues;
 import com.hpe.application.automation.tools.ssc.ProjectVersions;
-import com.hpe.application.automation.tools.ssc.SscConnector;
+import com.hpe.application.automation.tools.ssc.SSCClientManager;
+import com.hpe.application.automation.tools.ssc.SscProjectConnector;
 import com.microfocus.application.automation.tools.octane.configuration.ConfigurationService;
 import com.microfocus.application.automation.tools.octane.tests.build.BuildHandlerUtils;
 import com.microfocus.application.automation.tools.sse.common.StringUtils;
@@ -31,10 +32,11 @@ import java.util.*;
 public class SSCHandler {
 
     private final static Logger logger = LogManager.getLogger(SSCHandler.class);
-    private SSCFortifyConfigurations sscFortifyConfigurations = new SSCFortifyConfigurations();
-    private SscConnector sscConnector ;
+    private SscProjectConnector sscProjectConnector;
     private ProjectVersions.ProjectVersion projectVersion;
-    private Run run;
+    private String targetDir;
+
+
     public static final String SCAN_RESULT_FILE = "securityScan.json";
     public static String SEVERITY_LG_NAME_LOW = "list_node.severity.low";
     public static String SEVERITY_LG_NAME_MEDIUM = "list_node.severity.medium";
@@ -48,64 +50,56 @@ public class SSCHandler {
         return true;
     }
 
-    static class ProjectVersion {
-        public String project;
-        public String version;
 
-        public ProjectVersion(String projectName, String projectVersion) {
-            this.project = projectName;
-            this.version = projectVersion;
-        }
-    }
 
-    public SSCHandler(Run r) {
-        run = r;
+    public SSCHandler(String projectName, String projectVersionSymbol, String targetDir) {
+
+        //"Basic QWRtaW46ZGV2c2Vjb3Bz"
+        SSCFortifyConfigurations sscFortifyConfigurations = new SSCFortifyConfigurations();
+        sscFortifyConfigurations.baseToken = ConfigurationService.getModel().getSscBaseToken();
+        sscFortifyConfigurations.projectName = projectName;
+        sscFortifyConfigurations.projectVersion = projectVersionSymbol;
+        sscFortifyConfigurations.serverURL = ConfigurationService.getSSCServer();
+
+        this.targetDir = targetDir;
+
         if (!(ConfigurationService.getServerConfiguration() != null && ConfigurationService.getServerConfiguration().isValid()) ||
                 ConfigurationService.getModel().isSuspend()) {
             logger.warn("connection with Octane should be established before connection with ssc");
             System.out.println("connection with Octane should be established before connection with ssc");
             return;
         }
-        ProjectVersion project = getProjectVersion();
-        String sscServer = getSSCServer();
 
-
-        //"Basic QWRtaW46ZGV2c2Vjb3Bz"
-        sscFortifyConfigurations.baseToken = ConfigurationService.getModel().getSscBaseToken();
-        sscFortifyConfigurations.projectName = project.project;
-        sscFortifyConfigurations.projectVersion = project.version;
-        sscFortifyConfigurations.serverURL = sscServer;
         if(StringUtils.isNullOrEmpty(sscFortifyConfigurations.baseToken)||
                 StringUtils.isNullOrEmpty(sscFortifyConfigurations.projectName)||
                 StringUtils.isNullOrEmpty(sscFortifyConfigurations.projectVersion)||
                 StringUtils.isNullOrEmpty(sscFortifyConfigurations.serverURL)){
             logger.warn("missing one of the SSC configuration fields (baseToken\\project\\version\\serverUrl) will not continue connecting to the server");
         }else {
-            sscConnector = new SscConnector(sscFortifyConfigurations);
-            if (sscConnector != null) {
-                projectVersion = sscConnector.getProjectVersion();
+            sscProjectConnector = SSCClientManager.instance().getProjectConnector(sscFortifyConfigurations);
+            if (sscProjectConnector != null) {
+                projectVersion = sscProjectConnector.getProjectVersion();
             }
         }
 
     }
 
     public boolean isConnected(){
-        return sscConnector!=null;
+        return sscProjectConnector !=null;
     }
 
     public void getLatestScan() {
 
 //        saveReport();
-
-        String buildCiId = BuildHandlerUtils.getBuildCiId(run);
+        String buildCiId = "101";
         System.out.println("getLatestScan of : "+buildCiId);
         if(buildCiId.equals("54")){
             saveReport();
         }
 
-        Issues issues = sscConnector.readIssuesOfLastestScan(projectVersion);
+        Issues issues = sscProjectConnector.readIssuesOfLastestScan(projectVersion);
         List<OctaneIssue> octaneIssues = createOctaneIssues(issues);
-        IssuesFileSerializer issuesFileSerializer = new IssuesFileSerializer(run,octaneIssues);
+        IssuesFileSerializer issuesFileSerializer = new IssuesFileSerializer(targetDir,octaneIssues);
         issuesFileSerializer.doSerialize();
 
     }
@@ -241,70 +235,9 @@ public class SSCHandler {
     }
 
 
-    private String getSSCServer() {
-        Descriptor sscDescriptor = getSSCDescriptor(run);
-        return getServerFromDescriptor(sscDescriptor);
-    }
-
-    private String getServerFromDescriptor(Descriptor sscDescriptor) {
-        Object urlObj = getFieldValue(sscDescriptor, "url");
-        if(urlObj != null) {
-            return urlObj.toString();
-        }
-        return null;
-    }
-    private Object getFieldValue(Object someObject, String fieldName) {
-        for (Field field : someObject.getClass().getDeclaredFields()) {
-            field.setAccessible(true);
-            if(field.getName().equals(fieldName)) {
-                Object value = null;
-                try {
-                    value = field.get(someObject);
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                }
-                if (value != null) {
-                    return value;
-                }
-            }
-        }
-        return null;
-    }
-
-    private Descriptor getSSCDescriptor(Run r){
-        final List<Publisher> publishers = ((AbstractBuild) r).getProject().getPublishersList().toList();
-        for (Publisher publisher : publishers) {
-            if ("com.fortify.plugin.jenkins.FPRPublisher".equals(publisher.getClass().getName())) {
-                return publisher.getDescriptor();
-            }
-        }
-        return null;
-    }
-
-    private ProjectVersion getProjectVersion() {
-        AbstractProject project = ((AbstractBuild) run).getProject();
-        for (Object publisherO : project.getPublishersList()) {
-            if (publisherO instanceof Publisher) {
-                Publisher publisher = (Publisher) publisherO;
-                publisher.getClass().getName().equals(
-                        "com.fortify.plugin.jenkins.FPRPublisher");
-                return getProjectNameByReflection(publisherO);
-            }
-        }
-        return null;
-    }
-    private ProjectVersion getProjectNameByReflection(Object someObject) {
-        String projectName = getFieldValue(someObject, "projectName").toString();
-        String projectVersion = getFieldValue(someObject, "projectVersion").toString();
-        if (projectName != null && projectVersion != null) {
-            return new ProjectVersion(projectName, projectVersion);
-        }
-        return null;
-    }
-
     private void saveReport() {
 
-        String vulnerabilitiesScanFilePath = new File(run.getRootDir(), SCAN_RESULT_FILE).getPath();
+        String vulnerabilitiesScanFilePath = new File(this.targetDir, SCAN_RESULT_FILE).getPath();
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
         System.out.println(timeStamp+" : working on : "+vulnerabilitiesScanFilePath);
         try {

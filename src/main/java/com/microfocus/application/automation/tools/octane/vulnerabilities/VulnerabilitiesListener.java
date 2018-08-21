@@ -28,13 +28,13 @@ import com.microfocus.application.automation.tools.octane.configuration.Configur
 import com.microfocus.application.automation.tools.octane.tests.build.BuildHandlerUtils;
 import hudson.Extension;
 import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
 import hudson.model.Run;
 import hudson.tasks.Publisher;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.lang.reflect.Field;
-import java.util.List;
 
 /**
  * Jenkins events life cycle listener for processing vulnerabilities scan results on build completed
@@ -46,51 +46,72 @@ public class VulnerabilitiesListener {
 
     private VulnerabilitiesService vulnerabilitiesService = OctaneSDK.getInstance().getVulnerabilitiesService();
 
-
     public void processBuild(Run run) {
         String jobCiId = BuildHandlerUtils.getJobCiId(run);
         String buildCiId = BuildHandlerUtils.getBuildCiId(run);
-        if (!onFinalizedValidations(run)) {
+        ProjectAndVersionJobConfig projectAndVersionJobConfig = verifySSCConfig(run);
+        if (projectAndVersionJobConfig == null) {
             logger.warn("Octane configuration is not valid");
             return;
         }
 
-        vulnerabilitiesService.enqueuePushVulnerabilitiesScanResult(jobCiId, buildCiId);
+        vulnerabilitiesService.enqueuePushVulnerabilitiesScanResult(jobCiId, buildCiId, projectAndVersionJobConfig.project,
+                projectAndVersionJobConfig.version,run.getRootDir().getPath());
     }
 
+    private ProjectAndVersionJobConfig verifySSCConfig(Run run) {
 
-    private String getFieldValueByReflection(Object publisher, String fieldName) {
-        Class<?> clazz = publisher.getClass();
-        Field field = null; //Note, this can throw an exception if the field doesn't exist.
-        try {
-            field = clazz.getDeclaredField(fieldName);
-            org.springframework.util.ReflectionUtils.makeAccessible(field);
-            return field.get(publisher).toString();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
+        if (!(ConfigurationService.getServerConfiguration() != null && ConfigurationService.getServerConfiguration().isValid()) ||
+                ConfigurationService.getModel().isSuspend()) {
+            return null;
+        }
+        return getProjectVersionInJobConfig(run);
+    }
+    static class ProjectAndVersionJobConfig {
+        public String project;
+        public String version;
+
+        public ProjectAndVersionJobConfig(String projectName, String projectVersion) {
+            this.project = projectName;
+            this.version = projectVersion;
+        }
+    }
+    private ProjectAndVersionJobConfig getProjectVersionInJobConfig(Run run) {
+        AbstractProject project = ((AbstractBuild) run).getProject();
+        for (Object publisherO : project.getPublishersList()) {
+            if (publisherO instanceof Publisher) {
+                Publisher publisher = (Publisher) publisherO;
+                publisher.getClass().getName().equals(
+                        "com.fortify.plugin.jenkins.FPRPublisher");
+                return getProjectNameByReflection(publisherO);
+            }
         }
         return null;
     }
 
-    private boolean onFinalizedValidations(Run run) {
-
-        if (!(ConfigurationService.getServerConfiguration() != null && ConfigurationService.getServerConfiguration().isValid()) ||
-                ConfigurationService.getModel().isSuspend()) {
-            return false;
+    private ProjectAndVersionJobConfig getProjectNameByReflection(Object someObject) {
+        String projectName = getFieldValue(someObject, "projectName").toString();
+        String projectVersion = getFieldValue(someObject, "projectVersion").toString();
+        if (projectName != null && projectVersion != null) {
+            return new ProjectAndVersionJobConfig(projectName, projectVersion);
         }
-        final List<Publisher> publishers = ((AbstractBuild) run).getProject().getPublishersList().toList();
-        for (Publisher publisher : publishers) {
-            if ("com.fortify.plugin.jenkins.FPRPublisher".equals(publisher.getClass().getName())) {
-                String projectName = getFieldValueByReflection(publisher, "projectName");
-                String projectVersion = getFieldValueByReflection(publisher, "projectVersion");
-                if (projectName == null || projectVersion == null) {
-                    logger.warn("couldn't extract projectName\\projectVersion from FPRPublisher");
-                    return false;
+        return null;
+    }
+    private Object getFieldValue(Object someObject, String fieldName) {
+        for (Field field : someObject.getClass().getDeclaredFields()) {
+            field.setAccessible(true);
+            if(field.getName().equals(fieldName)) {
+                Object value = null;
+                try {
+                    value = field.get(someObject);
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+                if (value != null) {
+                    return value;
                 }
             }
         }
-        return true;
+        return null;
     }
 }

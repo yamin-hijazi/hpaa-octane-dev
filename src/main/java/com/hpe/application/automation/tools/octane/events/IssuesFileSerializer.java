@@ -1,5 +1,6 @@
 package com.hpe.application.automation.tools.octane.events;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hp.octane.integrations.dto.SecurityScans.OctaneIssue;
 import hudson.model.Run;
@@ -11,10 +12,10 @@ import java.util.List;
 import java.util.Map;
 
 public class IssuesFileSerializer {
-    private Run run;
+    private String targetDir;
     private List<OctaneIssue> octaneIssues;
-    public IssuesFileSerializer(Run r, List<OctaneIssue> issues){
-        this.run = r;
+    public IssuesFileSerializer(String targetDir, List<OctaneIssue> issues){
+        this.targetDir = targetDir;
         this.octaneIssues = issues;
     }
 
@@ -22,9 +23,11 @@ public class IssuesFileSerializer {
         try{
             Map dataFormat = new HashMap<>();
             dataFormat.put("data",octaneIssues);
-            String vulnerabilitiesScanFilePath = run.getRootDir() + File.separator + SSCHandler.SCAN_RESULT_FILE;
+            String vulnerabilitiesScanFilePath = targetDir + File.separator + SSCHandler.SCAN_RESULT_FILE;
             PrintWriter fw = new PrintWriter(vulnerabilitiesScanFilePath, "UTF-8");
-            new ObjectMapper().writeValue(fw,dataFormat);
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+            mapper.writeValue(fw,dataFormat);
             fw.flush();
             fw.close();
         }catch(Exception e){

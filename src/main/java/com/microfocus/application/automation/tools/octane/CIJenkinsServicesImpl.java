@@ -388,13 +388,10 @@ public class CIJenkinsServicesImpl extends CIPluginServicesBase {
 	}
 
 	@Override
-	public InputStream getVulnerabilitiesScanResultStream(String jobCiId, String buildCiId) {
+	public InputStream getVulnerabilitiesScanResultStream(String projectName, String projectVersionSymbol, String runRootDir){
 
-		Run build = getBuildFromQueueItem(jobCiId, buildCiId);
-		if(build==null){
-		    return null;
-        }
-		SSCHandler sscHandler = new SSCHandler(build);
+
+		SSCHandler sscHandler = new SSCHandler(projectName, projectVersionSymbol,runRootDir);
 		//check connection to ssc server
 		if(!sscHandler.isConnected()){
 			logger.warn("ssc is not connected, need to check all ssc configurations in order to continue with this task ");
@@ -402,10 +399,8 @@ public class CIJenkinsServicesImpl extends CIPluginServicesBase {
 		}
 		//check if scan already exists
 		InputStream result = null;
-		if (build == null) {
-			return null;
-		}
-		result = tryGetVulnerabilitiesScanFile(build);
+
+		result = tryGetVulnerabilitiesScanFile(runRootDir);
 		if(result!=null){
 			return result;
 		}
@@ -418,7 +413,7 @@ public class CIJenkinsServicesImpl extends CIPluginServicesBase {
 		//process scan
 		//save scan results inside build
 		sscHandler.getLatestScan();
-		return tryGetVulnerabilitiesScanFile(build);
+		return tryGetVulnerabilitiesScanFile(runRootDir);
 	}
 
 	private InputStream getVulnerabilitiesScanFile(Run run) {
@@ -437,9 +432,9 @@ public class CIJenkinsServicesImpl extends CIPluginServicesBase {
 		return result;
 	}
 
-	private InputStream tryGetVulnerabilitiesScanFile(Run run) {
+	private InputStream tryGetVulnerabilitiesScanFile(String runRootDir) {
 		InputStream result = null;
-		String vulnerabilitiesScanFilePath = run.getRootDir() + File.separator + "securityScan.json";
+		String vulnerabilitiesScanFilePath = runRootDir + File.separator + "securityScan.json";
 		File vulnerabilitiesScanFile = new File(vulnerabilitiesScanFilePath);
 		if (!vulnerabilitiesScanFile.exists()) {
 			return null;
@@ -447,7 +442,7 @@ public class CIJenkinsServicesImpl extends CIPluginServicesBase {
 		try {
 			result = new FileInputStream(vulnerabilitiesScanFilePath);
 		} catch (IOException ioe) {
-			logger.error("failed to obtain  vulnerabilities Scan File for " + run);
+			logger.error("failed to obtain  vulnerabilities Scan File in " + runRootDir);
 		}
 		return result;
 	}
