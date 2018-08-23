@@ -146,7 +146,7 @@ public class SSCHandler {
         }
     }
 
-    private void    setOctaneAnalysis(DTOFactory dtoFactory, Issues.Issue issue, OctaneIssue octaneIssue) {
+    private void setOctaneAnalysis(DTOFactory dtoFactory, Issues.Issue issue, OctaneIssue octaneIssue) {
 //        "issueStatus" : "Unreviewed", - analysis
 //        "audited" : false,- analysis
 //        "reviewed" : null, - analysis ?
@@ -155,18 +155,21 @@ public class SSCHandler {
 //        "list_node.issue_analysis_node.maybe_an_issue"
 //        "list_node.issue_analysis_node.bug_submitted"
 //        "list_node.issue_analysis_node.reviewed"
-        String analysisId = null;
-        if (issue.issueStatus != null && issue.issueStatus.equalsIgnoreCase("reviewed")) {
-            analysisId = "list_node.issue_analysis_node.reviewed";
-        } else if (issue.reviewed != null && issue.reviewed) {
-            analysisId = "list_node.issue_analysis_node.reviewed";
-        } else if (issue.audited != null && issue.audited) {
-            analysisId = "list_node.issue_analysis_node.reviewed";
+        if (isReviewed(issue)) {
+            octaneIssue.setAnalysis(createListNodeEntity(dtoFactory, "list_node.issue_analysis_node.reviewed"));
         }
-        if (analysisId != null) {
-            octaneIssue.setAnalysis(createListNodeEntity(dtoFactory, analysisId));
-        }
+    }
 
+    private boolean isReviewed(Issues.Issue issue) {
+        boolean returnValue = false;
+        if (issue.issueStatus != null && issue.issueStatus.equalsIgnoreCase("reviewed")) {
+            returnValue = true;
+        } else if (issue.reviewed != null && issue.reviewed) {
+            returnValue = true;
+        } else if (issue.audited != null && issue.audited) {
+            returnValue = true;
+        }
+        return returnValue;
     }
 
     private void setOctaneStatus(DTOFactory dtoFactory, Issues.Issue issue, OctaneIssue octaneIssue) {
