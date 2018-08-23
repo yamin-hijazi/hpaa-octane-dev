@@ -129,7 +129,7 @@ public class SSCClientManager {
     public static boolean succeeded(int statusCode) {
         return statusCode == 200 || statusCode == 201;
     }
-    static String isToString(InputStream is) throws IOException {
+    public static String isToString(InputStream is) throws IOException {
         ByteArrayOutputStream result = new ByteArrayOutputStream();
         byte[] buffer = new byte[1024];
         int length;
