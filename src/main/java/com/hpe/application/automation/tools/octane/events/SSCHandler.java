@@ -34,7 +34,7 @@ public class SSCHandler {
     public static String SEVERITY_LG_NAME_HIGH = "list_node.severity.high";
     public static String SEVERITY_LG_NAME_CRITICAL = "list_node.severity.urgent";
     public static String EXTERNAL_TOOL_NAME =  "Fortify SSC";
-
+    public static String ARTIFACT_STATUS_COMPLETE = "PROCESS_COMPLETE";
     public boolean getScanFinishStatus() {
         //need to check if there is scan that started after run started, if not return false
         //if yes - fetch the status and return true/false accordingly
@@ -46,7 +46,7 @@ public class SSCHandler {
     private Optional<Integer> getArtifactId() {
         Artifacts artifacts = sscProjectConnector.getArtifactsOfProjectVersion(this.projectVersion.id, 10);
         Artifacts.Artifact closestArtifact = getClosestArtifact(artifacts);
-        if(closestArtifact.status.equals("PROCESS_COMPLETE")){
+        if(closestArtifact.status.equals(ARTIFACT_STATUS_COMPLETE)){
             return Optional.of(closestArtifact.id);
         }
         return Optional.empty();
@@ -58,7 +58,7 @@ public class SSCHandler {
                 artifacts.data == null){
             return null;
         }
-        java.util.Date startRunDate = new Date(this.runStartTime);
+        Date startRunDate = new Date(this.runStartTime);
 
         for (Artifacts.Artifact artifact : artifacts.data) {
             Date uploadDate = SSCDateUtils.getDateFromUTCString(artifact.uploadDate, SSCDateUtils.sscFormat);
