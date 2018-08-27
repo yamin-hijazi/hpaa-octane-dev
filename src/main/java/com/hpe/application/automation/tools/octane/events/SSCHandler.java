@@ -3,24 +3,14 @@ package com.hpe.application.automation.tools.octane.events;
 import com.hp.octane.integrations.dto.DTOFactory;
 import com.hp.octane.integrations.dto.SecurityScans.OctaneIssue;
 import com.hp.octane.integrations.dto.entities.Entity;
-import com.hpe.application.automation.tools.ssc.Issues;
-import com.hpe.application.automation.tools.ssc.ProjectVersions;
-import com.hpe.application.automation.tools.ssc.SSCClientManager;
-import com.hpe.application.automation.tools.ssc.SscProjectConnector;
+import com.hpe.application.automation.tools.ssc.*;
 import com.microfocus.application.automation.tools.octane.configuration.ConfigurationService;
-import com.microfocus.application.automation.tools.octane.tests.build.BuildHandlerUtils;
 import com.microfocus.application.automation.tools.sse.common.StringUtils;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Descriptor;
-import hudson.model.Run;
-import hudson.tasks.Publisher;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.PrintWriter;
-import java.lang.reflect.Field;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -35,6 +25,7 @@ public class SSCHandler {
     private SscProjectConnector sscProjectConnector;
     private ProjectVersions.ProjectVersion projectVersion;
     private String targetDir;
+    private long runStartTime;
 
 
     public static final String SCAN_RESULT_FILE = "securityScan.json";
@@ -47,12 +38,39 @@ public class SSCHandler {
     public boolean getScanFinishStatus() {
         //need to check if there is scan that started after run started, if not return false
         //if yes - fetch the status and return true/false accordingly
-        return true;
+        Optional<Integer> artifactId = getArtifactId();
+        return artifactId.isPresent();
     }
 
 
+    private Optional<Integer> getArtifactId() {
+        Artifacts artifacts = sscProjectConnector.getArtifactsOfProjectVersion(this.projectVersion.id, 10);
+        Artifacts.Artifact closestArtifact = getClosestArtifact(artifacts);
+        if(closestArtifact.status.equals("PROCESS_COMPLETE")){
+            return Optional.of(closestArtifact.id);
+        }
+        return Optional.empty();
+    }
 
-    public SSCHandler(String projectName, String projectVersionSymbol, String targetDir) {
+    private Artifacts.Artifact getClosestArtifact(Artifacts artifacts) {
+        Artifacts.Artifact theCloset = null;
+        if(artifacts == null ||
+                artifacts.data == null){
+            return null;
+        }
+        java.util.Date startRunDate = new Date(this.runStartTime);
+
+        for (Artifacts.Artifact artifact : artifacts.data) {
+            Date uploadDate = SSCDateUtils.getDateFromUTCString(artifact.uploadDate, SSCDateUtils.sscFormat);
+            if(uploadDate.after(startRunDate)){
+                theCloset = artifact;
+            }
+        }
+        return theCloset;
+
+    }
+
+    public SSCHandler(String projectName, String projectVersionSymbol, String targetDir, long runStartTime) {
 
         //"Basic QWRtaW46ZGV2c2Vjb3Bz"
         SSCFortifyConfigurations sscFortifyConfigurations = new SSCFortifyConfigurations();
@@ -62,6 +80,7 @@ public class SSCHandler {
         sscFortifyConfigurations.serverURL = ConfigurationService.getSSCServer();
 
         this.targetDir = targetDir;
+        this.runStartTime = runStartTime;
 
         if (!(ConfigurationService.getServerConfiguration() != null && ConfigurationService.getServerConfiguration().isValid()) ||
                 ConfigurationService.getModel().isSuspend()) {
@@ -97,7 +116,7 @@ public class SSCHandler {
             saveReport();
         }
 
-        Issues issues = sscProjectConnector.readIssuesOfLastestScan(projectVersion);
+        Issues issues = sscProjectConnector.readIssuesOfLastestScan(projectVersion.id);
         List<OctaneIssue> octaneIssues = createOctaneIssues(issues);
         IssuesFileSerializer issuesFileSerializer = new IssuesFileSerializer(targetDir,octaneIssues);
         issuesFileSerializer.doSerialize();

@@ -57,7 +57,7 @@ public class SSCClientManager {
             invalidToken = true;
         }else {
             Date tenMinsFromNow = new Date(System.currentTimeMillis() + 10 * 60 * 1000);
-            Date expired = SSCDateUtils.getDateFromDateString(authTokenData.terminalDate, SSCDateUtils.sscFormat);
+            Date expired = SSCDateUtils.getDateFromUTCString(authTokenData.terminalDate, SSCDateUtils.sscFormat);
             if (expired.before(tenMinsFromNow)) {
                 invalidToken = true;
             }

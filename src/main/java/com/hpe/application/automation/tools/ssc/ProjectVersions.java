@@ -9,16 +9,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ProjectVersions extends SscBaseEntityArray<ProjectVersions.ProjectVersion> {
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class CurrentState{
+    public static class ProjectVersion {
         @JsonProperty("id")
         public Integer id;
-        @JsonProperty("issueCountDelta")
-        public Integer issueCountDelta;
-    }
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class ProjectVersion {
-        @JsonProperty("currentState")
-        public CurrentState currentState;
         @JsonProperty("latestScanId")
         public Integer latestScanId;
     }

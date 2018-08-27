@@ -388,10 +388,10 @@ public class CIJenkinsServicesImpl extends CIPluginServicesBase {
 	}
 
 	@Override
-	public InputStream getVulnerabilitiesScanResultStream(String projectName, String projectVersionSymbol, String runRootDir){
+	public InputStream getVulnerabilitiesScanResultStream(String projectName, String projectVersionSymbol, String runRootDir,long startTime){
 
 
-		SSCHandler sscHandler = new SSCHandler(projectName, projectVersionSymbol,runRootDir);
+		SSCHandler sscHandler = new SSCHandler(projectName, projectVersionSymbol,runRootDir,startTime);
 		//check connection to ssc server
 		if(!sscHandler.isConnected()){
 			logger.warn("ssc is not connected, need to check all ssc configurations in order to continue with this task ");

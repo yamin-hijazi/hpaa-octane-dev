@@ -100,9 +100,16 @@ public class SscProjectConnector {
         }
         return null;
     }
-    public Issues readIssuesOfLastestScan(ProjectVersions.ProjectVersion projectVersion) {
-        String urlSuffix = String.format("projectVersions/%d/issues", projectVersion.currentState.id);
+    public Issues readIssuesOfLastestScan(int projectVersionId) {
+        String urlSuffix = String.format("projectVersions/%d/issues", projectVersionId);
         String rawResponse = sendGetEntity(urlSuffix);
         return responseToObject(rawResponse, Issues.class);
+    }
+
+    public Artifacts getArtifactsOfProjectVersion(Integer id, int limit) {
+
+        String urlSuffix = String.format("projectVersions/%d/artifacts?limit=%d", id, limit);
+        String rawResponse = sendGetEntity(urlSuffix);
+        return responseToObject(rawResponse, Artifacts.class);
     }
 }
