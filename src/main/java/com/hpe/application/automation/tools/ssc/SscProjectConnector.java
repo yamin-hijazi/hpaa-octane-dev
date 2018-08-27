@@ -100,8 +100,8 @@ public class SscProjectConnector {
         }
         return null;
     }
-    public Issues readIssuesOfLastestScan(int projectVersionId) {
-        String urlSuffix = String.format("projectVersions/%d/issues", projectVersionId);
+    public Issues readNewIssuesOfLastestScan(int projectVersionId) {
+        String urlSuffix = String.format("projectVersions/%d/issues?issue_age:new", projectVersionId);
         String rawResponse = sendGetEntity(urlSuffix);
         return responseToObject(rawResponse, Issues.class);
     }

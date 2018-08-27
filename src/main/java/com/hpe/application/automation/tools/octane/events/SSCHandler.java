@@ -116,7 +116,7 @@ public class SSCHandler {
             saveReport();
         }
 
-        Issues issues = sscProjectConnector.readIssuesOfLastestScan(projectVersion.id);
+        Issues issues = sscProjectConnector.readNewIssuesOfLastestScan(projectVersion.id);
         List<OctaneIssue> octaneIssues = createOctaneIssues(issues);
         IssuesFileSerializer issuesFileSerializer = new IssuesFileSerializer(targetDir,octaneIssues);
         issuesFileSerializer.doSerialize();
