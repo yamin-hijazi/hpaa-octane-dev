@@ -56,7 +56,8 @@ public class VulnerabilitiesListener {
         }
 
         vulnerabilitiesService.enqueuePushVulnerabilitiesScanResult(jobCiId, buildCiId, projectAndVersionJobConfig.project,
-                projectAndVersionJobConfig.version,run.getRootDir().getPath());
+                projectAndVersionJobConfig.version,run.getRootDir().getPath(),
+                run.getStartTimeInMillis());
     }
 
     private ProjectAndVersionJobConfig verifySSCConfig(Run run) {

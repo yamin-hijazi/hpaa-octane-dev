@@ -4,6 +4,7 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.TimeZone;
 
 public class SSCDateUtils {
     //"2017-02-12T12:31:44.000+0000"
@@ -14,14 +15,15 @@ public class SSCDateUtils {
         if (inputFoundDate == null) {
             return null;
         }
-        Date date = getDateFromDateString(inputFoundDate,sscFormat);
+        Date date = getDateFromUTCString(inputFoundDate,sscFormat);
         //"2018-06-03T14:06:58Z"
         SimpleDateFormat targetDateFormat = new SimpleDateFormat(octaneFormat);
         return targetDateFormat.format(date);
     }
-    public static Date getDateFromDateString(String inputDate,String format) {
+    public static Date getDateFromUTCString(String inputDate, String format) {
         try {
             DateFormat sourceDateFormat = new SimpleDateFormat(format);
+            sourceDateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
             return sourceDateFormat.parse(inputDate);
         } catch (ParseException e) {
             e.printStackTrace();

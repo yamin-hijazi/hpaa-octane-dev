@@ -3,24 +3,14 @@ package com.hpe.application.automation.tools.octane.events;
 import com.hp.octane.integrations.dto.DTOFactory;
 import com.hp.octane.integrations.dto.SecurityScans.OctaneIssue;
 import com.hp.octane.integrations.dto.entities.Entity;
-import com.hpe.application.automation.tools.ssc.Issues;
-import com.hpe.application.automation.tools.ssc.ProjectVersions;
-import com.hpe.application.automation.tools.ssc.SSCClientManager;
-import com.hpe.application.automation.tools.ssc.SscProjectConnector;
+import com.hpe.application.automation.tools.ssc.*;
 import com.microfocus.application.automation.tools.octane.configuration.ConfigurationService;
-import com.microfocus.application.automation.tools.octane.tests.build.BuildHandlerUtils;
 import com.microfocus.application.automation.tools.sse.common.StringUtils;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Descriptor;
-import hudson.model.Run;
-import hudson.tasks.Publisher;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.PrintWriter;
-import java.lang.reflect.Field;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -35,6 +25,7 @@ public class SSCHandler {
     private SscProjectConnector sscProjectConnector;
     private ProjectVersions.ProjectVersion projectVersion;
     private String targetDir;
+    private long runStartTime;
 
 
     public static final String SCAN_RESULT_FILE = "securityScan.json";
@@ -43,16 +34,43 @@ public class SSCHandler {
     public static String SEVERITY_LG_NAME_HIGH = "list_node.severity.high";
     public static String SEVERITY_LG_NAME_CRITICAL = "list_node.severity.urgent";
     public static String EXTERNAL_TOOL_NAME =  "Fortify SSC";
-
+    public static String ARTIFACT_STATUS_COMPLETE = "PROCESS_COMPLETE";
     public boolean getScanFinishStatus() {
         //need to check if there is scan that started after run started, if not return false
         //if yes - fetch the status and return true/false accordingly
-        return true;
+        Optional<Integer> artifactId = getArtifactId();
+        return artifactId.isPresent();
     }
 
 
+    private Optional<Integer> getArtifactId() {
+        Artifacts artifacts = sscProjectConnector.getArtifactsOfProjectVersion(this.projectVersion.id, 10);
+        Artifacts.Artifact closestArtifact = getClosestArtifact(artifacts);
+        if(closestArtifact.status.equals(ARTIFACT_STATUS_COMPLETE)){
+            return Optional.of(closestArtifact.id);
+        }
+        return Optional.empty();
+    }
 
-    public SSCHandler(String projectName, String projectVersionSymbol, String targetDir) {
+    private Artifacts.Artifact getClosestArtifact(Artifacts artifacts) {
+        Artifacts.Artifact theCloset = null;
+        if(artifacts == null ||
+                artifacts.data == null){
+            return null;
+        }
+        Date startRunDate = new Date(this.runStartTime);
+
+        for (Artifacts.Artifact artifact : artifacts.data) {
+            Date uploadDate = SSCDateUtils.getDateFromUTCString(artifact.uploadDate, SSCDateUtils.sscFormat);
+            if(uploadDate.after(startRunDate)){
+                theCloset = artifact;
+            }
+        }
+        return theCloset;
+
+    }
+
+    public SSCHandler(String projectName, String projectVersionSymbol, String targetDir, long runStartTime) {
 
         //"Basic QWRtaW46ZGV2c2Vjb3Bz"
         SSCFortifyConfigurations sscFortifyConfigurations = new SSCFortifyConfigurations();
@@ -62,6 +80,7 @@ public class SSCHandler {
         sscFortifyConfigurations.serverURL = ConfigurationService.getSSCServer();
 
         this.targetDir = targetDir;
+        this.runStartTime = runStartTime;
 
         if (!(ConfigurationService.getServerConfiguration() != null && ConfigurationService.getServerConfiguration().isValid()) ||
                 ConfigurationService.getModel().isSuspend()) {
@@ -97,7 +116,7 @@ public class SSCHandler {
             saveReport();
         }
 
-        Issues issues = sscProjectConnector.readIssuesOfLastestScan(projectVersion);
+        Issues issues = sscProjectConnector.readNewIssuesOfLastestScan(projectVersion.id);
         List<OctaneIssue> octaneIssues = createOctaneIssues(issues);
         IssuesFileSerializer issuesFileSerializer = new IssuesFileSerializer(targetDir,octaneIssues);
         issuesFileSerializer.doSerialize();
@@ -146,7 +165,7 @@ public class SSCHandler {
         }
     }
 
-    private void    setOctaneAnalysis(DTOFactory dtoFactory, Issues.Issue issue, OctaneIssue octaneIssue) {
+    private void setOctaneAnalysis(DTOFactory dtoFactory, Issues.Issue issue, OctaneIssue octaneIssue) {
 //        "issueStatus" : "Unreviewed", - analysis
 //        "audited" : false,- analysis
 //        "reviewed" : null, - analysis ?
@@ -155,18 +174,21 @@ public class SSCHandler {
 //        "list_node.issue_analysis_node.maybe_an_issue"
 //        "list_node.issue_analysis_node.bug_submitted"
 //        "list_node.issue_analysis_node.reviewed"
-        String analysisId = null;
-        if (issue.issueStatus != null && issue.issueStatus.equalsIgnoreCase("reviewed")) {
-            analysisId = "list_node.issue_analysis_node.reviewed";
-        } else if (issue.reviewed != null && issue.reviewed) {
-            analysisId = "list_node.issue_analysis_node.reviewed";
-        } else if (issue.audited != null && issue.audited) {
-            analysisId = "list_node.issue_analysis_node.reviewed";
+        if (isReviewed(issue)) {
+            octaneIssue.setAnalysis(createListNodeEntity(dtoFactory, "list_node.issue_analysis_node.reviewed"));
         }
-        if (analysisId != null) {
-            octaneIssue.setAnalysis(createListNodeEntity(dtoFactory, analysisId));
-        }
+    }
 
+    private boolean isReviewed(Issues.Issue issue) {
+        boolean returnValue = false;
+        if (issue.issueStatus != null && issue.issueStatus.equalsIgnoreCase("reviewed")) {
+            returnValue = true;
+        } else if (issue.reviewed != null && issue.reviewed) {
+            returnValue = true;
+        } else if (issue.audited != null && issue.audited) {
+            returnValue = true;
+        }
+        return returnValue;
     }
 
     private void setOctaneStatus(DTOFactory dtoFactory, Issues.Issue issue, OctaneIssue octaneIssue) {
