@@ -42,6 +42,7 @@ import com.hp.octane.integrations.dto.tests.TestsResult;
 import com.hp.octane.integrations.exceptions.ConfigurationException;
 import com.hp.octane.integrations.exceptions.PermissionException;
 import com.hp.octane.integrations.spi.CIPluginServicesBase;
+import com.hp.octane.integrations.spi.VulnerabilitiesStatus;
 import com.hpe.application.automation.tools.octane.events.SSCHandler;
 import com.microfocus.application.automation.tools.model.OctaneServerSettingsModel;
 import com.microfocus.application.automation.tools.octane.configuration.ConfigurationService;
@@ -388,32 +389,32 @@ public class CIJenkinsServicesImpl extends CIPluginServicesBase {
 	}
 
 	@Override
-	public InputStream getVulnerabilitiesScanResultStream(String projectName, String projectVersionSymbol, String runRootDir,long startTime){
+	public VulnerabilitiesStatus getVulnerabilitiesScanResultStream(String projectName, String projectVersionSymbol, String runRootDir, long startTime){
 
 
 		SSCHandler sscHandler = new SSCHandler(projectName, projectVersionSymbol,runRootDir,startTime);
 		//check connection to ssc server
 		if(sscHandler!=null && !sscHandler.isConnected()){
 			logger.warn("ssc is not connected, need to check all ssc configurations in order to continue with this task ");
-			return null;
+			return new VulnerabilitiesStatus(VulnerabilitiesStatus.Polling.ContinuePolling, null);
 		}
 		//check if scan already exists
 		InputStream result = null;
 
 		result = tryGetVulnerabilitiesScanFile(runRootDir);
 		if(result!=null){
-			return result;
+			return new VulnerabilitiesStatus(VulnerabilitiesStatus.Polling.ScanIsCompleted, result);
 		}
 		//if file not exists yet , check if scan is finished and handle accordingly
-		boolean isScanFinished = sscHandler.getScanFinishStatus();
-		if(!isScanFinished){
-			return null;
+		VulnerabilitiesStatus.Polling scanFinishStatus = sscHandler.getScanFinishStatus();
+		if(!scanFinishStatus.equals(VulnerabilitiesStatus.Polling.ScanIsCompleted)){
+			return new VulnerabilitiesStatus(scanFinishStatus,null);
 		}
 		//scan finished :
 		//process scan
 		//save scan results inside build
 		sscHandler.getLatestScan();
-		return tryGetVulnerabilitiesScanFile(runRootDir);
+		return new VulnerabilitiesStatus(scanFinishStatus ,tryGetVulnerabilitiesScanFile(runRootDir));
 	}
 
 	private InputStream getVulnerabilitiesScanFile(Run run) {

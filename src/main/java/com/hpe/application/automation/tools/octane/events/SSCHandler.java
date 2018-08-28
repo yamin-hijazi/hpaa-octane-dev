@@ -3,6 +3,7 @@ package com.hpe.application.automation.tools.octane.events;
 import com.hp.octane.integrations.dto.DTOFactory;
 import com.hp.octane.integrations.dto.entities.Entity;
 import com.hp.octane.integrations.dto.securityscans.OctaneIssue;
+import com.hp.octane.integrations.spi.VulnerabilitiesStatus;
 import com.hpe.application.automation.tools.ssc.*;
 import com.microfocus.application.automation.tools.octane.configuration.ConfigurationService;
 import com.microfocus.application.automation.tools.sse.common.StringUtils;
@@ -35,22 +36,25 @@ public class SSCHandler {
     public static String SEVERITY_LG_NAME_CRITICAL = "list_node.severity.urgent";
     public static String EXTERNAL_TOOL_NAME =  "Fortify SSC";
     public static String ARTIFACT_STATUS_COMPLETE = "PROCESS_COMPLETE";
-    public boolean getScanFinishStatus() {
-        //need to check if there is scan that started after run started, if not return false
-        //if yes - fetch the status and return true/false accordingly
-        Optional<Integer> artifactId = getArtifactId();
-        return artifactId.isPresent();
-    }
+    public static String ARTIFACT_ERROR_PROCESSING = "ERROR_PROCESSING";
 
+    public VulnerabilitiesStatus.Polling getScanFinishStatus() {
 
-    private Optional<Integer> getArtifactId() {
         Artifacts artifacts = sscProjectConnector.getArtifactsOfProjectVersion(this.projectVersion.id, 10);
         Artifacts.Artifact closestArtifact = getClosestArtifact(artifacts);
-        if(closestArtifact.status.equals(ARTIFACT_STATUS_COMPLETE)){
-            return Optional.of(closestArtifact.id);
+        if(closestArtifact == null){
+            return VulnerabilitiesStatus.Polling.ContinuePolling;
         }
-        return Optional.empty();
+        if(closestArtifact.status.equals(ARTIFACT_STATUS_COMPLETE)){
+            return VulnerabilitiesStatus.Polling.ScanIsCompleted;
+        }
+        if(closestArtifact.status.equals(ARTIFACT_ERROR_PROCESSING)){
+            return VulnerabilitiesStatus.Polling.StopPolling;
+        }
+        return VulnerabilitiesStatus.Polling.ContinuePolling;
+
     }
+
 
     private Artifacts.Artifact getClosestArtifact(Artifacts artifacts) {
         Artifacts.Artifact theCloset = null;
@@ -179,7 +183,13 @@ public class SSCHandler {
 
     private void setOctaneStatus(DTOFactory dtoFactory, Issues.Issue issue, OctaneIssue octaneIssue) {
         if (issue.scanStatus != null) {
-            String listNodeId = "list_node.issue_state_node." + issue.scanStatus.toLowerCase();
+            String listNodeId = null;
+            if(issue.scanStatus.toLowerCase().equalsIgnoreCase("updated")) {
+                listNodeId = "list_node.issue_state_node.existing";
+            }
+            else if(issue.scanStatus.toLowerCase().equalsIgnoreCase("new")) {
+                listNodeId = "list_node.issue_state_node.new";
+            }
             if (isLegalOctaneState(listNodeId)) {
                 octaneIssue.setState(createListNodeEntity(dtoFactory, listNodeId));
             }
