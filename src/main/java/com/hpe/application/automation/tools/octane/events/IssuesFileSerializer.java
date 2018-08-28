@@ -2,8 +2,7 @@ package com.hpe.application.automation.tools.octane.events;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hp.octane.integrations.dto.SecurityScans.OctaneIssue;
-import hudson.model.Run;
+import com.hp.octane.integrations.dto.securityscans.OctaneIssue;
 
 import java.io.File;
 import java.io.PrintWriter;

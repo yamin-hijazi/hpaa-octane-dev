@@ -1,8 +1,8 @@
 package com.hpe.application.automation.tools.octane.events;
 
 import com.hp.octane.integrations.dto.DTOFactory;
-import com.hp.octane.integrations.dto.SecurityScans.OctaneIssue;
 import com.hp.octane.integrations.dto.entities.Entity;
+import com.hp.octane.integrations.dto.securityscans.OctaneIssue;
 import com.hpe.application.automation.tools.ssc.*;
 import com.microfocus.application.automation.tools.octane.configuration.ConfigurationService;
 import com.microfocus.application.automation.tools.sse.common.StringUtils;
@@ -82,13 +82,6 @@ public class SSCHandler {
         this.targetDir = targetDir;
         this.runStartTime = runStartTime;
 
-        if (!(ConfigurationService.getServerConfiguration() != null && ConfigurationService.getServerConfiguration().isValid()) ||
-                ConfigurationService.getModel().isSuspend()) {
-            logger.warn("connection with Octane should be established before connection with ssc");
-            System.out.println("connection with Octane should be established before connection with ssc");
-            return;
-        }
-
         if(StringUtils.isNullOrEmpty(sscFortifyConfigurations.baseToken)||
                 StringUtils.isNullOrEmpty(sscFortifyConfigurations.projectName)||
                 StringUtils.isNullOrEmpty(sscFortifyConfigurations.projectVersion)||
@@ -109,13 +102,6 @@ public class SSCHandler {
 
     public void getLatestScan() {
 
-//        saveReport();
-        String buildCiId = "101";
-        System.out.println("getLatestScan of : "+buildCiId);
-        if(buildCiId.equals("54")){
-            saveReport();
-        }
-
         Issues issues = sscProjectConnector.readNewIssuesOfLastestScan(projectVersion.id);
         List<OctaneIssue> octaneIssues = createOctaneIssues(issues);
         IssuesFileSerializer issuesFileSerializer = new IssuesFileSerializer(targetDir,octaneIssues);
@@ -135,13 +121,13 @@ public class SSCHandler {
             setOctaneSeverity(dtoFactory, issue, octaneIssue);
             setOctaneStatus(dtoFactory, issue, octaneIssue);
             Map extendedData = getExtendedData(issue);
-            octaneIssue.setExtended_data(extendedData);
-            octaneIssue.setPrimary_location_full(issue.primaryLocation);
+            octaneIssue.setExtendedData(extendedData);
+            octaneIssue.setPrimaryLocationFull(issue.primaryLocation);
             octaneIssue.setLine(issue.lineNumber);
-            octaneIssue.setRemote_id(issue.issueInstanceId);
-            octaneIssue.setIntroduced_date(convertDates(issue.foundDate));
-            octaneIssue.setExternal_link(issue.hRef);
-            octaneIssue.setTool_name(EXTERNAL_TOOL_NAME);
+            octaneIssue.setRemoteId(issue.issueInstanceId);
+            octaneIssue.setIntroducedDate(convertDates(issue.foundDate));
+            octaneIssue.setExternalLink(issue.hRef);
+            octaneIssue.setToolName(EXTERNAL_TOOL_NAME);
             octaneIssues.add(octaneIssue);
         }
 

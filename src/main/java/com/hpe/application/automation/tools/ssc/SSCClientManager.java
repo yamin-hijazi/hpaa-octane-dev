@@ -25,7 +25,6 @@ public class SSCClientManager {
     private static SSCClientManager _instance;
     static {
         _instance = new SSCClientManager();
-        _instance.initHttpClient();
     }
     private static Object lockObj = new Object();
     private AuthToken.AuthTokenData authTokenData;
@@ -80,6 +79,9 @@ public class SSCClientManager {
         try {
             HttpEntity entity = new ByteArrayEntity(body.getBytes("UTF-8"));
             request.setEntity(entity);
+            if(httpClient==null){
+                initHttpClient();
+            }
             response = httpClient.execute(request);
             if (succeeded(response.getStatusLine().getStatusCode())) {
 

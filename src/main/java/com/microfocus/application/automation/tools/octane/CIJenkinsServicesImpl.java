@@ -393,7 +393,7 @@ public class CIJenkinsServicesImpl extends CIPluginServicesBase {
 
 		SSCHandler sscHandler = new SSCHandler(projectName, projectVersionSymbol,runRootDir,startTime);
 		//check connection to ssc server
-		if(!sscHandler.isConnected()){
+		if(sscHandler!=null && !sscHandler.isConnected()){
 			logger.warn("ssc is not connected, need to check all ssc configurations in order to continue with this task ");
 			return null;
 		}

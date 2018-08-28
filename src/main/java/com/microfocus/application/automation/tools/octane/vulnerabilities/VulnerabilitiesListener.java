@@ -91,14 +91,15 @@ public class VulnerabilitiesListener {
     }
 
     private ProjectAndVersionJobConfig getProjectNameByReflection(Object someObject) {
-        String projectName = getFieldValue(someObject, "projectName").toString();
-        String projectVersion = getFieldValue(someObject, "projectVersion").toString();
+
+        String projectName = getFieldValue(someObject, "projectName");
+        String projectVersion = getFieldValue(someObject, "projectVersion");
         if (projectName != null && projectVersion != null) {
             return new ProjectAndVersionJobConfig(projectName, projectVersion);
         }
         return null;
     }
-    private Object getFieldValue(Object someObject, String fieldName) {
+    private String getFieldValue(Object someObject, String fieldName) {
         for (Field field : someObject.getClass().getDeclaredFields()) {
             field.setAccessible(true);
             if(field.getName().equals(fieldName)) {
@@ -109,7 +110,7 @@ public class VulnerabilitiesListener {
                     e.printStackTrace();
                 }
                 if (value != null) {
-                    return value;
+                    return value.toString();
                 }
             }
         }
