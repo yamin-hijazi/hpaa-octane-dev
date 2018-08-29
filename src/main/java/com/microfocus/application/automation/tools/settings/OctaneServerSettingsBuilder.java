@@ -120,6 +120,7 @@ public class OctaneServerSettingsBuilder extends Builder {
 			if (StringUtils.isEmpty(model.getIdentity())) {
 				model.setIdentity(UUID.randomUUID().toString());
 				model.setIdentityFrom(new Date().getTime());
+				model.setSscPollingInterval(10);
 				save();
 			}
 
@@ -168,6 +169,10 @@ public class OctaneServerSettingsBuilder extends Builder {
 				if (!oldModel.getIdentity().equals(identity)) {
 					newModel.setIdentity(identity);
 				}
+			}
+			if(jsonObject.containsKey("sscPollingInterval")){
+				Long sscPollingInterval = jsonObject.getLong("sscPollingInterval");
+				newModel.setSscPollingInterval(sscPollingInterval);
 			}
 			setModel(newModel);
 			return super.configure(req, formData);

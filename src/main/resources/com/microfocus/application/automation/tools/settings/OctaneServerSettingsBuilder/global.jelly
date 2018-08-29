@@ -63,6 +63,9 @@
                     <f:entry title="${%global.config.ssc.basetoken.title}" field="sscBaseToken" description="${%global.config.ssc.basetoken.description}">
                         <f:textbox value="${mqm.sscBaseToken}" />
                     </f:entry>
+                    <f:entry title="${%global.config.ssc.polling.interval.title}" field="sscPollingInterval" description="${%global.config.ssc.polling.interval.description}">
+                        <f:textbox value="${mqm.sscPollingInterval}" />
+                    </f:entry>
                     <f:entry />
                     <f:optionalBlock name="showIdentity" field="showIdentity" title="${%global.config.dynamic.instanceId.title}" >
                         <f:entry title="${%global.config.instanceId.title}" field="identity" description="${%global.config.instanceId.description}">

@@ -44,7 +44,7 @@ public class OctaneServerSettingsModel {
     // inferred from uiLocation
     private String location;
     private String sharedSpace;
-
+    private long sscPollingInterval;
 
     public OctaneServerSettingsModel() {
 
@@ -124,5 +124,12 @@ public class OctaneServerSettingsModel {
 
     public void setIdentityFrom(Long identityFrom) {
         this.identityFrom = identityFrom;
+    }
+
+    public long getSscPollingInterval(){
+        return sscPollingInterval;
+    }
+    public void setSscPollingInterval(long intervalInSeconds){
+        sscPollingInterval = intervalInSeconds;
     }
 }
