@@ -39,20 +39,24 @@ public class SSCHandler {
     public static String ARTIFACT_ERROR_PROCESSING = "ERROR_PROCESSING";
 
     public VulnerabilitiesStatus.Polling getScanFinishStatus() {
+        logger.debug("enter getScanFinishStatus");
 
         Artifacts artifacts = sscProjectConnector.getArtifactsOfProjectVersion(this.projectVersion.id, 10);
         Artifacts.Artifact closestArtifact = getClosestArtifact(artifacts);
         if(closestArtifact == null){
+            logger.debug("Cannot find artifact of the run");
             return VulnerabilitiesStatus.Polling.ContinuePolling;
         }
         if(closestArtifact.status.equals(ARTIFACT_STATUS_COMPLETE)){
+            logger.debug("artifact of the run is in completed");
             return VulnerabilitiesStatus.Polling.ScanIsCompleted;
         }
         if(closestArtifact.status.equals(ARTIFACT_ERROR_PROCESSING)){
+            logger.debug("artifact of the run faced error, polling should stop");
             return VulnerabilitiesStatus.Polling.StopPolling;
         }
+        logger.debug("artifact of the run is not complete, polling should continue");
         return VulnerabilitiesStatus.Polling.ContinuePolling;
-
     }
 
 
@@ -105,12 +109,12 @@ public class SSCHandler {
     }
 
     public void getLatestScan() {
-
+        logger.warn("entered getLatestScan, read issues and serialize to:" + this.targetDir);
         Issues issues = sscProjectConnector.readNewIssuesOfLastestScan(projectVersion.id);
         List<OctaneIssue> octaneIssues = createOctaneIssues(issues);
-        IssuesFileSerializer issuesFileSerializer = new IssuesFileSerializer(targetDir,octaneIssues);
+        IssuesFileSerializer issuesFileSerializer = new IssuesFileSerializer(targetDir, octaneIssues);
         issuesFileSerializer.doSerialize();
-
+        logger.warn("exit getLatestScan");
     }
 
     private List<OctaneIssue> createOctaneIssues(Issues issues) {
@@ -120,23 +124,31 @@ public class SSCHandler {
         DTOFactory dtoFactory = DTOFactory.getInstance();
         List<OctaneIssue> octaneIssues = new ArrayList<>();
         for (Issues.Issue issue : issues.data) {
-            OctaneIssue octaneIssue = dtoFactory.newDTO(OctaneIssue.class);
-            setOctaneAnalysis(dtoFactory, issue, octaneIssue);
-            setOctaneSeverity(dtoFactory, issue, octaneIssue);
-            setOctaneStatus(dtoFactory, issue, octaneIssue);
-            Map extendedData = getExtendedData(issue);
-            octaneIssue.setExtendedData(extendedData);
-            octaneIssue.setPrimaryLocationFull(issue.primaryLocation);
-            octaneIssue.setLine(issue.lineNumber);
-            octaneIssue.setRemoteId(issue.issueInstanceId);
-            octaneIssue.setIntroducedDate(convertDates(issue.foundDate));
-            octaneIssue.setExternalLink(issue.hRef);
-            octaneIssue.setToolName(EXTERNAL_TOOL_NAME);
+            OctaneIssue octaneIssue = createOctaneIssue(dtoFactory, issue);
             octaneIssues.add(octaneIssue);
         }
 
         return octaneIssues;
     }
+
+    private OctaneIssue createOctaneIssue(DTOFactory dtoFactory, Issues.Issue issue) {
+        logger.debug("enter createOctaneIssue");
+        OctaneIssue octaneIssue = dtoFactory.newDTO(OctaneIssue.class);
+        setOctaneAnalysis(dtoFactory, issue, octaneIssue);
+        setOctaneSeverity(dtoFactory, issue, octaneIssue);
+        setOctaneStatus(dtoFactory, issue, octaneIssue);
+        Map extendedData = getExtendedData(issue);
+        octaneIssue.setExtendedData(extendedData);
+        octaneIssue.setPrimaryLocationFull(issue.primaryLocation);
+        octaneIssue.setLine(issue.lineNumber);
+        octaneIssue.setRemoteId(issue.issueInstanceId);
+        octaneIssue.setIntroducedDate(convertDates(issue.foundDate));
+        octaneIssue.setExternalLink(issue.hRef);
+        octaneIssue.setToolName(EXTERNAL_TOOL_NAME);
+        logger.debug("exit createOctaneIssue");
+        return octaneIssue;
+    }
+
     static private String convertDates(String inputFoundDate) {
         if(inputFoundDate == null){
             return null;
