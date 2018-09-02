@@ -10,10 +10,10 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 
-import static com.hpe.application.automation.tools.ssc.SSCClientManager.getNetHost;
-import static com.hpe.application.automation.tools.ssc.SSCClientManager.isToString;
-import static com.hpe.application.automation.tools.ssc.SSCClientManager.succeeded;
+import static com.hpe.application.automation.tools.ssc.SSCClientManager.*;
 
 /**
  * Created by hijaziy on 7/12/2018.
@@ -71,7 +71,13 @@ public class SscProjectConnector {
         if (projectId == null) {
             return null;
         }
-        String suffix = "projects/" + projectId + "/versions?q=name:" + this.sscFortifyConfigurations.projectVersion;
+        String suffix = null;
+        try {
+            suffix = "projects/" + projectId + "/versions?q=name:" + URLEncoder.encode(this.sscFortifyConfigurations.projectVersion, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            //todo: add logger message here
+            return null;
+        }
         String rawResponse = sendGetEntity(suffix);
         ProjectVersions projectVersions = responseToObject(rawResponse, ProjectVersions.class);
         if (projectVersions.data.length == 0) {
@@ -81,7 +87,13 @@ public class SscProjectConnector {
     }
 
     public Integer getProjectId() {
-        String rawResponse = sendGetEntity("projects?q=name:" + this.sscFortifyConfigurations.projectName);
+        String rawResponse = null;
+        try {
+            rawResponse = sendGetEntity("projects?q=name:" + URLEncoder.encode(this.sscFortifyConfigurations.projectName, "UTF-8"));
+        } catch (UnsupportedEncodingException e) {
+            //todo: add logger message here
+            return null;
+        }
         Projects projects = responseToObject(rawResponse, Projects.class);
         if (projects.data.length == 0) {
             return null;
