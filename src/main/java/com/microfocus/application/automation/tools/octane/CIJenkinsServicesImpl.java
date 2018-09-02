@@ -103,7 +103,6 @@ public class CIJenkinsServicesImpl extends CIPluginServicesBase {
 				.setSendingTime(System.currentTimeMillis())
 				.setImpersonatedUser(model.getImpersonatedUser())
 				.setSuspended(model.isSuspend())
-				.setSSCPollingIntervalSeconds(model.getSscPollingInterval())
 				.setSSCBaseAuthToken(model.getSscBaseToken());
 		result.setSSCURL(ConfigurationService.getSSCServer());
 		return result;
