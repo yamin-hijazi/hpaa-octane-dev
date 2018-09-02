@@ -42,8 +42,6 @@ import com.hp.octane.integrations.dto.tests.TestsResult;
 import com.hp.octane.integrations.exceptions.ConfigurationException;
 import com.hp.octane.integrations.exceptions.PermissionException;
 import com.hp.octane.integrations.spi.CIPluginServicesBase;
-import com.hp.octane.integrations.spi.VulnerabilitiesStatus;
-import com.hpe.application.automation.tools.octane.events.SSCHandler;
 import com.microfocus.application.automation.tools.model.OctaneServerSettingsModel;
 import com.microfocus.application.automation.tools.octane.configuration.ConfigurationService;
 import com.microfocus.application.automation.tools.octane.configuration.ServerConfiguration;
@@ -104,8 +102,10 @@ public class CIJenkinsServicesImpl extends CIPluginServicesBase {
 				.setInstanceIdFrom(model.getIdentityFrom())
 				.setSendingTime(System.currentTimeMillis())
 				.setImpersonatedUser(model.getImpersonatedUser())
-				.setSuspended(model.isSuspend()).setSSCPollingIntervalSeconds(model.getSscPollingInterval());
-
+				.setSuspended(model.isSuspend())
+				.setSSCPollingIntervalSeconds(model.getSscPollingInterval())
+				.setSSCBaseAuthToken(model.getSscBaseToken());
+		result.setSSCURL(ConfigurationService.getSSCServer());
 		return result;
 	}
 
@@ -387,67 +387,6 @@ public class CIJenkinsServicesImpl extends CIPluginServicesBase {
 			return null;
 		}
 	}
-
-	@Override
-	public VulnerabilitiesStatus getVulnerabilitiesScanResultStream(String projectName, String projectVersionSymbol, String runRootDir, long startTime){
-
-
-		SSCHandler sscHandler = new SSCHandler(projectName, projectVersionSymbol,runRootDir,startTime);
-		//check connection to ssc server
-		if(sscHandler!=null && !sscHandler.isConnected()){
-			logger.warn("ssc is not connected, need to check all ssc configurations in order to continue with this task ");
-			return new VulnerabilitiesStatus(VulnerabilitiesStatus.Polling.ContinuePolling, null);
-		}
-		//check if scan already exists
-		InputStream result = null;
-
-		result = tryGetVulnerabilitiesScanFile(runRootDir);
-		if(result!=null){
-			return new VulnerabilitiesStatus(VulnerabilitiesStatus.Polling.ScanIsCompleted, result);
-		}
-		//if file not exists yet , check if scan is finished and handle accordingly
-		VulnerabilitiesStatus.Polling scanFinishStatus = sscHandler.getScanFinishStatus();
-		if(!scanFinishStatus.equals(VulnerabilitiesStatus.Polling.ScanIsCompleted)){
-			return new VulnerabilitiesStatus(scanFinishStatus,null);
-		}
-		//scan finished :
-		//process scan
-		//save scan results inside build
-		sscHandler.getLatestScan();
-		return new VulnerabilitiesStatus(scanFinishStatus ,tryGetVulnerabilitiesScanFile(runRootDir));
-	}
-
-	private InputStream getVulnerabilitiesScanFile(Run run) {
-		InputStream result = null;
-		String vulnerabilitiesScanFilePath = run.getRootDir() + File.separator + "securityScan.json";
-		File vulnerabilitiesScanFile = new File(vulnerabilitiesScanFilePath);
-		if (!vulnerabilitiesScanFile.exists()) {
-			logger.error("failed to transfer vulnerabilities Scan File for " + run);
-		}else {
-			try {
-				result = new FileInputStream(vulnerabilitiesScanFilePath);
-			} catch (IOException ioe) {
-				logger.error("failed to obtain  vulnerabilities Scan File for " + run);
-			}
-		}
-		return result;
-	}
-
-	private InputStream tryGetVulnerabilitiesScanFile(String runRootDir) {
-		InputStream result = null;
-		String vulnerabilitiesScanFilePath = runRootDir + File.separator + "securityScan.json";
-		File vulnerabilitiesScanFile = new File(vulnerabilitiesScanFilePath);
-		if (!vulnerabilitiesScanFile.exists()) {
-			return null;
-		}
-		try {
-			result = new FileInputStream(vulnerabilitiesScanFilePath);
-		} catch (IOException ioe) {
-			logger.error("failed to obtain  vulnerabilities Scan File in " + runRootDir);
-		}
-		return result;
-	}
-
 	private InputStream getOctaneLogFile(Run run) {
 		InputStream result = null;
 		String octaneLogFilePath = run.getLogFile().getParent() + File.separator + "octane_log";
