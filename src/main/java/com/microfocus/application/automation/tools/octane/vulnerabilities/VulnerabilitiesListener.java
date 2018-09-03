@@ -64,6 +64,7 @@ public class VulnerabilitiesListener {
 
         if (!(ConfigurationService.getServerConfiguration() != null && ConfigurationService.getServerConfiguration().isValid()) ||
                 ConfigurationService.getModel().isSuspend()) {
+            logger.warn("Octane is configured to suspend. No need to get SSC Project Configuration ");
             return null;
         }
         return getProjectVersionInJobConfig(run);
@@ -87,6 +88,7 @@ public class VulnerabilitiesListener {
                 return getProjectNameByReflection(publisherO);
             }
         }
+        logger.warn("Unable to find SSC config in project configuration.");
         return null;
     }
 
