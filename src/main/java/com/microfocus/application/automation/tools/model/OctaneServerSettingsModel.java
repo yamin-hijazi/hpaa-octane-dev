@@ -44,7 +44,7 @@ public class OctaneServerSettingsModel {
     // inferred from uiLocation
     private String location;
     private String sharedSpace;
-
+    private long maxTimeoutHours;
 
     public OctaneServerSettingsModel() {
 
@@ -124,5 +124,12 @@ public class OctaneServerSettingsModel {
 
     public void setIdentityFrom(Long identityFrom) {
         this.identityFrom = identityFrom;
+    }
+
+    public long getPollingTimeoutHours() {
+        return maxTimeoutHours;
+    }
+    public void setPollingTimeoutHours(long timeoutHours) {
+        maxTimeoutHours = timeoutHours;
     }
 }
