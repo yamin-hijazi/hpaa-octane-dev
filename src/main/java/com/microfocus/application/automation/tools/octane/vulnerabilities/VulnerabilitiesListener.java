@@ -56,7 +56,7 @@ public class VulnerabilitiesListener {
         }
 
         vulnerabilitiesService.enqueueRetrieveAndPushVulnerabilities(jobCiId, buildCiId, projectAndVersionJobConfig.project,
-                projectAndVersionJobConfig.version,run.getRootDir().getPath(),
+                projectAndVersionJobConfig.version,
                 run.getStartTimeInMillis());
     }
 
