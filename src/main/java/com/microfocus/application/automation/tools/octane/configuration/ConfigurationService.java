@@ -108,7 +108,7 @@ public class ConfigurationService {
         return octaneDescriptor;
     }
     private static Descriptor getSSCDescriptor(){
-        return getJenkinsInstance().getDescriptorByName("com.fortify.plugin.jenkins.FPRPublisher");
+        return Jenkins.getInstance().getDescriptorByName("com.fortify.plugin.jenkins.FPRPublisher");
     }
 
     /**
