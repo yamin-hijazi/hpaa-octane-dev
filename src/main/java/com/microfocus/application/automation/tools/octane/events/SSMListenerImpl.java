@@ -27,8 +27,6 @@ import com.microfocus.application.automation.tools.octane.vulnerabilities.Vulner
 import hudson.Extension;
 import hudson.model.Run;
 import hudson.model.listeners.RunListener;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Created by dshmaya on 25/07/2018
@@ -37,9 +35,8 @@ import org.apache.logging.log4j.Logger;
 
 @Extension
 public class SSMListenerImpl extends RunListener<Run> {
-	private static Logger logger = LogManager.getLogger(SSMListenerImpl.class);
 	@Inject
-	VulnerabilitiesListener vulnerabilitiesListener;
+	private VulnerabilitiesListener vulnerabilitiesListener;
 
 	@Override
 	public void onFinalized(Run run) {
