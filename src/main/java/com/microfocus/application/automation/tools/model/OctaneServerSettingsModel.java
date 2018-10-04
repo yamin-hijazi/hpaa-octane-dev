@@ -39,22 +39,28 @@ public class OctaneServerSettingsModel {
     private Secret password;
     private String impersonatedUser;
     private boolean suspend;
+    private String sscBaseToken;
 
     // inferred from uiLocation
     private String location;
     private String sharedSpace;
-
+    private long maxTimeoutHours;
 
     public OctaneServerSettingsModel() {
 
     }
 
-    @DataBoundConstructor
     public OctaneServerSettingsModel(String uiLocation, String username, Secret password, String impersonatedUser) {
+        this(uiLocation, username, password, impersonatedUser, null);
+    }
+
+    @DataBoundConstructor
+    public OctaneServerSettingsModel(String uiLocation, String username, Secret password, String impersonatedUser, String sscBaseToken) {
         this.uiLocation = StringUtils.trim(uiLocation);
         this.username = username;
         this.password = password;
         this.impersonatedUser = impersonatedUser;
+        this.sscBaseToken = sscBaseToken;
     }
 
     public boolean isSuspend(){
@@ -64,6 +70,13 @@ public class OctaneServerSettingsModel {
     @DataBoundSetter
     public void setSuspend(boolean suspend){
         this.suspend = suspend;
+    }
+    public String getSscBaseToken(){
+        return this.sscBaseToken;
+    }
+
+    public void setSscBaseToken(String sscBaseToken){
+        this.sscBaseToken = sscBaseToken;
     }
 
     public String getUiLocation() {
@@ -116,5 +129,13 @@ public class OctaneServerSettingsModel {
 
     public void setIdentityFrom(Long identityFrom) {
         this.identityFrom = identityFrom;
+    }
+
+    public long getPollingTimeoutHours() {
+        return maxTimeoutHours;
+    }
+
+    public void setPollingTimeoutHours(long timeoutHours) {
+        maxTimeoutHours = timeoutHours;
     }
 }
