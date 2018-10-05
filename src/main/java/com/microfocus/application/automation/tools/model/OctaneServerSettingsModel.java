@@ -29,6 +29,9 @@ import org.kohsuke.stapler.DataBoundSetter;
 
 import java.util.Date;
 
+/*
+* Model for sotring the Octane configuration
+*/
 public class OctaneServerSettingsModel {
 
     private String identity;
