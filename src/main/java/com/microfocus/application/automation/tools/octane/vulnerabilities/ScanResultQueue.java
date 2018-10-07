@@ -39,10 +39,10 @@ public interface ScanResultQueue {
 
     class QueueItem implements Serializable {
         private static final long serialVersionUID = 1;
-        String buildId;
-        String jobId;
-        String projectName;
-        String ProjectVersion;
+        private String buildId;
+        private String jobId;
+        private String projectName;
+        private String ProjectVersion;
 
         public QueueItem(String buildId, String jobId, String projectName, String projectVersion) {
             this.buildId = buildId;

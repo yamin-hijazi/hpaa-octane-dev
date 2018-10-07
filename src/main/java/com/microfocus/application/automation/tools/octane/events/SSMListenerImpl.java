@@ -37,9 +37,9 @@ import org.apache.logging.log4j.Logger;
 
 @Extension
 public class SSMListenerImpl extends RunListener<Run> {
-    private static Logger logger = LogManager.getLogger(SSMListenerImpl.class);
+
     @Inject
-    VulnerabilitiesListener vulnerabilitiesListener;
+    private VulnerabilitiesListener vulnerabilitiesListener;
 
     @Override
     public void onFinalized(Run run) {
