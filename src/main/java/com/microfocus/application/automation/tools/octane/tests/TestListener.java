@@ -1,29 +1,26 @@
 /*
- *
- *  Certain versions of software and/or documents (“Material”) accessible here may contain branding from
- *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
- *  the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
- *  and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE
- *  marks are the property of their respective owners.
+ * Certain versions of software and/or documents ("Material") accessible here may contain branding from
+ * Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
+ * the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
+ * and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE
+ * marks are the property of their respective owners.
  * __________________________________________________________________
  * MIT License
  *
- * © Copyright 2012-2018 Micro Focus or one of its affiliates.
+ * (c) Copyright 2012-2019 Micro Focus or one of its affiliates.
  *
  * The only warranties for products and services of Micro Focus and its affiliates
- * and licensors (“Micro Focus”) are set forth in the express warranty statements
+ * and licensors ("Micro Focus") are set forth in the express warranty statements
  * accompanying such products and services. Nothing herein should be construed as
  * constituting an additional warranty. Micro Focus shall not be liable for technical
  * or editorial errors or omissions contained herein.
  * The information contained herein is subject to change without notice.
  * ___________________________________________________________________
- *
  */
 
 package com.microfocus.application.automation.tools.octane.tests;
 
-import com.google.inject.Inject;
-import com.microfocus.application.automation.tools.octane.ResultQueue;
+import com.hp.octane.integrations.OctaneSDK;
 import com.microfocus.application.automation.tools.octane.model.processors.projects.JobProcessorFactory;
 import com.microfocus.application.automation.tools.octane.tests.build.BuildHandlerUtils;
 import com.microfocus.application.automation.tools.octane.tests.detection.UFTExtension;
@@ -47,12 +44,10 @@ import java.util.List;
 public class TestListener {
 	private static Logger logger = LogManager.getLogger(TestListener.class);
 
-	private static final String JENKINS_STORMRUNNER_LOAD_TEST_RUNNER_CLASS = "com.hpe.sr.plugins.jenkins.StormTestRunner";
-	private static final String JENKINS_STORMRUNNER_FUNCTIONAL_TEST_RUNNER_CLASS = "com.hpe.application.automation.tools.srf.run.RunFromSrfBuilder";
-	private static final String JENKINS_PERFORMANCE_CENTER_TEST_RUNNER_CLASS = "com.hpe.application.automation.tools.run.PcBuilder";
+	private static final String STORMRUNNER_LOAD_TEST_RUNNER_CLASS = "StormTestRunner";
+	private static final String STORMRUNNER_FUNCTIONAL_TEST_RUNNER_CLASS = "RunFromSrfBuilder";
+	private static final String PERFORMANCE_CENTER_TEST_RUNNER_CLASS = "PcBuilder";
 	public static final String TEST_RESULT_FILE = "mqmTests.xml";
-
-	private ResultQueue queue;
 
 	public boolean processBuild(Run run) {
 		FilePath resultPath = new FilePath(new FilePath(run.getRootDir()), TEST_RESULT_FILE);
@@ -64,19 +59,19 @@ public class TestListener {
 		List<Builder> builders = JobProcessorFactory.getFlowProcessor(run.getParent()).tryGetBuilders();
 		if (builders != null) {
 			for (Builder builder : builders) {
-				if (builder.getClass().getName().equals(JENKINS_STORMRUNNER_LOAD_TEST_RUNNER_CLASS)) {
+				if (STORMRUNNER_LOAD_TEST_RUNNER_CLASS.equals(builder.getClass().getSimpleName())) {
 					hpRunnerType = HPRunnerType.StormRunnerLoad;
 					break;
 				}
-				if (builder.getClass().getName().equals(JENKINS_STORMRUNNER_FUNCTIONAL_TEST_RUNNER_CLASS)) {
+				if (STORMRUNNER_FUNCTIONAL_TEST_RUNNER_CLASS.equals(builder.getClass().getSimpleName())) {
 					hpRunnerType = HPRunnerType.StormRunnerFunctional;
 					break;
 				}
-				if (builder.getClass().getName().equals(UFTExtension.RUN_FROM_FILE_BUILDER) || builder.getClass().getName().equals(UFTExtension.RUN_FROM_ALM_BUILDER)) {
+				if (UFTExtension.RUN_FROM_FILE_BUILDER.equals(builder.getClass().getSimpleName()) || UFTExtension.RUN_FROM_ALM_BUILDER.equals(builder.getClass().getSimpleName())) {
 					hpRunnerType = HPRunnerType.UFT;
 					break;
 				}
-				if (builder.getClass().getName().equals(JENKINS_PERFORMANCE_CENTER_TEST_RUNNER_CLASS)) {
+				if (PERFORMANCE_CENTER_TEST_RUNNER_CLASS.equals(builder.getClass().getSimpleName())) {
 					hpRunnerType = HPRunnerType.PerformanceCenter;
 					break;
 				}
@@ -99,10 +94,15 @@ public class TestListener {
 		} finally {
 			try {
 				resultWriter.close();
-				if (success && hasTests) {
-					String projectFullName = BuildHandlerUtils.getProjectFullName(run);
-					if (projectFullName != null) {
-						queue.add(projectFullName, run.getNumber());
+
+				// we don't push individual maven module results (although we create the file for future use)
+				if (!"hudson.maven.MavenBuild".equals(run.getClass().getName())) {
+					if (success && hasTests) {
+						String projectFullName = BuildHandlerUtils.getJobCiId(run);
+						if (projectFullName != null) {
+							OctaneSDK.getClients().forEach(octaneClient ->
+									octaneClient.getTestsService().enqueuePushTestsResult(projectFullName, String.valueOf(run.getNumber())));
+						}
 					}
 				}
 			} catch (XMLStreamException xmlse) {
@@ -110,18 +110,6 @@ public class TestListener {
 				logger.error("failed to finalize test results processing", xmlse);
 			}
 		}
-		return success && hasTests;//test results expected
-	}
-
-	@Inject
-	public void setTestResultQueue(TestsResultQueue queue) {
-		this.queue = queue;
-	}
-
-	/*
-	 * To be used in tests only.
-	 */
-	public void _setTestResultQueue(ResultQueue queue) {
-		this.queue = queue;
+		return success && hasTests;
 	}
 }

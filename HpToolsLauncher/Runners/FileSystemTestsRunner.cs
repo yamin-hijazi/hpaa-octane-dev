@@ -8,7 +8,7 @@
  * __________________________________________________________________
  * MIT License
  *
- * © Copyright 2012-2018 Micro Focus or one of its affiliates.
+ * © Copyright 2012-2019 Micro Focus or one of its affiliates..
  *
  * The only warranties for products and services of Micro Focus and its affiliates
  * and licensors (“Micro Focus”) are set forth in the express warranty statements
@@ -27,6 +27,7 @@ using System.IO;
 using System.Reflection;
 using HpToolsLauncher.Properties;
 using HpToolsLauncher.TestRunners;
+using HpToolsLauncher.RTS;
 
 namespace HpToolsLauncher
 {
@@ -41,6 +42,8 @@ namespace HpToolsLauncher
         private bool _useUFTLicense;
         private bool _displayController;
         private string _analysisTemplate;
+        private SummaryDataLogger _summaryDataLogger;
+        private List<ScriptRTSModel> _scriptRTSSet;
         private TimeSpan _timeout = TimeSpan.MaxValue;
         private readonly string _uftRunMode;
         private Stopwatch _stopwatch = null;
@@ -85,9 +88,12 @@ namespace HpToolsLauncher
                                     Dictionary<string, List<string>> parallelRunnerEnvironments,
                                     bool displayController,
                                     string analysisTemplate,
+                                    SummaryDataLogger summaryDataLogger,
+                                    List<ScriptRTSModel> scriptRTSSet,
+                                    string reportPath,
                                     bool useUFTLicense = false)
 
-            :this(sources, timeout, ControllerPollingInterval, perScenarioTimeOutMinutes, ignoreErrorStrings, jenkinsEnvVariables, mcConnection, mobileInfo, parallelRunnerEnvironments, displayController, analysisTemplate, useUFTLicense)
+            :this(sources, timeout, ControllerPollingInterval, perScenarioTimeOutMinutes, ignoreErrorStrings, jenkinsEnvVariables, mcConnection, mobileInfo, parallelRunnerEnvironments, displayController, analysisTemplate, summaryDataLogger, scriptRTSSet,reportPath, useUFTLicense)
         {
             _uftRunMode = uftRunMode;
         }
@@ -110,6 +116,9 @@ namespace HpToolsLauncher
                                     Dictionary<string, List<string>> parallelRunnerEnvironments,
                                     bool displayController,
                                     string analysisTemplate,
+                                    SummaryDataLogger summaryDataLogger,
+                                    List<ScriptRTSModel> scriptRTSSet,
+                                    string reportPath,
                                     bool useUFTLicense = false)
         {
             _jenkinsEnvVariables = jenkinsEnvVariables;
@@ -131,6 +140,8 @@ namespace HpToolsLauncher
             _useUFTLicense = useUFTLicense;
             _displayController = displayController;
             _analysisTemplate = analysisTemplate;
+            _summaryDataLogger = summaryDataLogger;
+            _scriptRTSSet = scriptRTSSet;
             _tests = new List<TestInfo>();
 
             _mcConnection = mcConnection;
@@ -139,6 +150,11 @@ namespace HpToolsLauncher
             _parallelRunnerEnvironments = parallelRunnerEnvironments;
 
             ConsoleWriter.WriteLine("Mc connection info is - " + _mcConnection.ToString());
+
+            if (reportPath != null)
+            {
+                ConsoleWriter.WriteLine("Results directory is: " + reportPath);
+            }
 
             //go over all sources, and create a list of all tests
             foreach (TestData source in sources)
@@ -211,6 +227,12 @@ namespace HpToolsLauncher
                 Environment.Exit((int)Launcher.ExitCodeEnum.Failed);
             }
 
+            // if a custom path was provided,set the custom report path for all the valid tests(this will overwrite the default location)
+            if (reportPath != null)
+            {
+                _tests.ForEach(test => test.ReportPath = reportPath);
+            }
+
             ConsoleWriter.WriteLine(string.Format(Resources.FsRunnerTestsFound, _tests.Count));
 
             foreach(var test in _tests)
@@ -257,6 +279,7 @@ namespace HpToolsLauncher
                         runResult.TestState = TestState.Error;
                         runResult.ErrorDesc = ex.Message;
                         runResult.TestName = test.TestName;
+                        runResult.TestPath = test.TestPath;
                     }
 
                     //get the original source for this test, for grouping tests under test classes
@@ -369,7 +392,7 @@ namespace HpToolsLauncher
                     break;
                 case TestType.LoadRunner:
                     AppDomain.CurrentDomain.AssemblyResolve += Helper.HPToolsAssemblyResolver;
-                    runner = new PerformanceTestRunner(this, _timeout, _pollingInterval, _perScenarioTimeOutMinutes, _ignoreErrorStrings, _displayController, _analysisTemplate);
+                    runner = new PerformanceTestRunner(this, _timeout, _pollingInterval, _perScenarioTimeOutMinutes, _ignoreErrorStrings, _displayController, _analysisTemplate, _summaryDataLogger, _scriptRTSSet);
                     break;
                 case TestType.ParallelRunner:
                     runner = new ParallelTestRunner(this, _timeout - _stopwatch.Elapsed, _mcConnection, _mobileInfoForAllGuiTests, _parallelRunnerEnvironments);
@@ -415,7 +438,9 @@ namespace HpToolsLauncher
             //if timeout has passed
             if (_stopwatch.Elapsed > _timeout && !_blnRunCancelled)
             {
+                ConsoleWriter.WriteLine(Resources.SmallDoubleSeparator);
                 ConsoleWriter.WriteLine(Resources.GeneralTimedOut);
+                ConsoleWriter.WriteLine(Resources.SmallDoubleSeparator);
 
                 Launcher.ExitCode = Launcher.ExitCodeEnum.Aborted;
                 _blnRunCancelled = true;

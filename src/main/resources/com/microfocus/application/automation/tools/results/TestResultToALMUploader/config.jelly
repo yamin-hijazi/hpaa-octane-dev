@@ -8,7 +8,7 @@
   ~ __________________________________________________________________
   ~ MIT License
   ~
-  ~ © Copyright 2012-2018 Micro Focus or one of its affiliates.
+  ~ © Copyright 2012-2019 Micro Focus or one of its affiliates..
   ~
   ~ The only warranties for products and services of Micro Focus and its affiliates
   ~ and licensors (“Micro Focus”) are set forth in the express warranty statements
@@ -49,12 +49,15 @@
     <f:entry title="Domain" field="almDomain">
         <f:textbox name="uploadtest.almDomain" value="${instance.uploadTestResultToAlmModel.almDomain}"/>
     </f:entry>
+
+    <f:entry title="Project" field="almProject">
+        <f:textbox name="uploadtest.almProject" value="${instance.uploadTestResultToAlmModel.almProject}"/>
+    </f:entry>
+
     <f:entry title="Client type" field="clientType">
         <f:textbox name="uploadtest.clientType" value="${instance.uploadTestResultToAlmModel.clientType}"/>
     </f:entry>
-    <f:entry title="Project" field="almProject">
-        <f:textbox name="uploadtest.almProject" value="${instance.uploadTestResultToAlmModel.almProject}"/>
-    </f:entry>      
+
     <f:entry title="Testing Framework" field="testingFramework">
         <select name="uploadtest.testingFramework" >
             <j:forEach var="testingFramework" items="${descriptor.testingFrameworks}">

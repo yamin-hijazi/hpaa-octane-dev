@@ -1,23 +1,21 @@
 /*
- *
- *  Certain versions of software and/or documents (“Material”) accessible here may contain branding from
- *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
- *  the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
- *  and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE
- *  marks are the property of their respective owners.
+ * Certain versions of software and/or documents ("Material") accessible here may contain branding from
+ * Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
+ * the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
+ * and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE
+ * marks are the property of their respective owners.
  * __________________________________________________________________
  * MIT License
  *
- * © Copyright 2012-2018 Micro Focus or one of its affiliates.
+ * (c) Copyright 2012-2019 Micro Focus or one of its affiliates.
  *
  * The only warranties for products and services of Micro Focus and its affiliates
- * and licensors (“Micro Focus”) are set forth in the express warranty statements
+ * and licensors ("Micro Focus") are set forth in the express warranty statements
  * accompanying such products and services. Nothing herein should be construed as
  * constituting an additional warranty. Micro Focus shall not be liable for technical
  * or editorial errors or omissions contained herein.
  * The information contained herein is subject to change without notice.
  * ___________________________________________________________________
- *
  */
 
 package com.microfocus.application.automation.tools.srf.run;
@@ -211,7 +209,7 @@ public class RunFromSrfBuilder extends Builder implements Serializable, Observer
     public RunFromSrfBuilder.DescriptorImpl getDescriptor() {
         return (RunFromSrfBuilder.DescriptorImpl) super.getDescriptor();
     }
-
+    // TODO: REMOVE THIS AND USE ONLY CLIENT
     public static JSONObject getSrfConnectionData(AbstractBuild<?, ?> build, PrintStream logger) {
         try {
             CookieHandler.setDefault(new CookieManager(null, CookiePolicy.ACCEPT_ALL));
@@ -241,6 +239,12 @@ public class RunFromSrfBuilder extends Builder implements Serializable, Observer
             String tenant = app.substring(1, app.indexOf('_'));
             String secret = credentials.getPassword().getPlainText();
             String server = document.getElementsByTagName("srfServerName").item(0).getTextContent();
+
+            // Normalize SRF server URL string if needed
+            if (server.substring(server.length() - 1).equals("/")) {
+                server = server.substring(0, server.length() - 1);
+            }
+
             boolean https = true;
             if (!server.startsWith("https://")) {
                 if (!server.startsWith("http://")) {
@@ -480,17 +484,43 @@ public class RunFromSrfBuilder extends Builder implements Serializable, Observer
         int cnt = jobs.size();
         for (int k = 0; k < cnt; k++ ){
             JSONObject job = jobs.getJSONObject(k);
-            JSONObject jobExecutionError = job.getJSONObject("error");
-            if (jobExecutionError.size() != 0) {
-                JSONObject errorParameters = jobExecutionError.getJSONObject("parameters");
-                jobIds.add(errorParameters.getString("jobId"));
-                runningCount.add(errorParameters.getString("testRunId"));
-            } else {
-                jobIds.add(job.getString("jobId"));
-                runningCount.add(job.getString("testRunId"));
+            try {
+                if (job.has("error")) {
+                    String errorClassName = job.get("error").getClass().getSimpleName();
+                    switch (errorClassName) {
+                        case "JSONObject":
+                            JSONObject jobExecutionError = job.getJSONObject("error");
+                            handleJobError(jobIds, jobExecutionError);
+                            break;
+                        case "JSONArray":
+                            JSONArray jobExecutionErrors = job.getJSONArray("error");
+                            for (Object jobError : jobExecutionErrors) {
+                                JSONObject error = (JSONObject) jobError;
+                                handleJobError(jobIds, error);
+                            }
+                            break;
+                        default:
+                            throw new SrfException(String.format("Received unexpected error class type, expected 'JSONObject' or 'JSONArray' but received %s", errorClassName));
+                    }
+                } else {
+                    jobIds.add(job.getString("jobId"));
+                    runningCount.add(job.getString("testRunId"));
+                }
+            } catch (Exception e) {
+                systemLogger.severe(e.getLocalizedMessage());
             }
         }
         return jobIds;
+    }
+
+    private void handleJobError(JSONArray jobIds, JSONObject jobExecutionError) {
+        JSONObject errorParameters = jobExecutionError.getJSONObject("parameters");
+        String testRunId = errorParameters.getString("testRunId");
+        // Make sure we won't add the same run in case job has multiple errors
+        if (!runningCount.contains(testRunId)) {
+            jobIds.add(errorParameters.getString("jobId"));
+            runningCount.add(testRunId);
+        }
     }
 
     private String addAuthentication(HttpsURLConnection con){

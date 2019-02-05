@@ -1,23 +1,21 @@
 /*
- *
- *  Certain versions of software and/or documents (“Material”) accessible here may contain branding from
- *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
- *  the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
- *  and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE
- *  marks are the property of their respective owners.
+ * Certain versions of software and/or documents ("Material") accessible here may contain branding from
+ * Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
+ * the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
+ * and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE
+ * marks are the property of their respective owners.
  * __________________________________________________________________
  * MIT License
  *
- * © Copyright 2012-2018 Micro Focus or one of its affiliates.
+ * (c) Copyright 2012-2019 Micro Focus or one of its affiliates.
  *
  * The only warranties for products and services of Micro Focus and its affiliates
- * and licensors (“Micro Focus”) are set forth in the express warranty statements
+ * and licensors ("Micro Focus") are set forth in the express warranty statements
  * accompanying such products and services. Nothing herein should be construed as
  * constituting an additional warranty. Micro Focus shall not be liable for technical
  * or editorial errors or omissions contained herein.
  * The information contained herein is subject to change without notice.
  * ___________________________________________________________________
- *
  */
 
 package com.microfocus.application.automation.tools.srf.settings;
@@ -39,6 +37,7 @@ import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
+import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
 import org.apache.commons.httpclient.auth.AuthenticationException;
 import org.apache.commons.lang.StringUtils;
@@ -56,11 +55,13 @@ import java.net.*;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
+import java.util.logging.Logger;
 
 /**
  * Created by shepshel on 20/07/2016.
  */
 public class SrfServerSettingsBuilder extends Builder {
+    private static final Logger logger = Logger.getLogger(SrfServerSettingsBuilder.class.getName());
     private String credentialsId;
     private String srfServerName;
     private String srfProxyName;
@@ -274,6 +275,9 @@ public class SrfServerSettingsBuilder extends Builder {
                 return FormValidation.error("Connection error: " + e.getMessage() + " (Could be a proxy issue)");
             } catch (SocketTimeoutException e) {
                 return FormValidation.error("Connection error: Timed out request");
+            } catch (JSONException e) {
+                logger.severe(e.getLocalizedMessage());
+                return FormValidation.error("Received invalid response");
             } catch (Exception e) {
                 return FormValidation.error("Connection error: " + e.getMessage());
             }

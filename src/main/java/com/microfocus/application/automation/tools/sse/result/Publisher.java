@@ -1,23 +1,21 @@
 /*
- *
- *  Certain versions of software and/or documents (“Material”) accessible here may contain branding from
- *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
- *  the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
- *  and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE
- *  marks are the property of their respective owners.
+ * Certain versions of software and/or documents ("Material") accessible here may contain branding from
+ * Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
+ * the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
+ * and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE
+ * marks are the property of their respective owners.
  * __________________________________________________________________
  * MIT License
  *
- * © Copyright 2012-2018 Micro Focus or one of its affiliates.
+ * (c) Copyright 2012-2019 Micro Focus or one of its affiliates.
  *
  * The only warranties for products and services of Micro Focus and its affiliates
- * and licensors (“Micro Focus”) are set forth in the express warranty statements
+ * and licensors ("Micro Focus") are set forth in the express warranty statements
  * accompanying such products and services. Nothing herein should be construed as
  * constituting an additional warranty. Micro Focus shall not be liable for technical
  * or editorial errors or omissions contained herein.
  * The information contained herein is subject to change without notice.
  * ___________________________________________________________________
- *
  */
 
 package com.microfocus.application.automation.tools.sse.result;
@@ -54,7 +52,7 @@ public abstract class Publisher extends Handler {
         Response response = testSetRunsRequest.execute();
         List<Map<String, String>> testInstanceRun = getTestInstanceRun(response, logger);
         String entityName = getEntityName(nameSuffix, logger);
-        if (testInstanceRun != null) {
+        if (testInstanceRun != null && testInstanceRun.size() > 0) {
             ret =
                     new JUnitParser().toModel(
                             testInstanceRun,
@@ -80,6 +78,12 @@ public abstract class Publisher extends Handler {
         try {
             if (!StringUtils.isNullOrEmpty(response.toString())) {
                 ret = XPathUtils.toEntities(response.toString());
+            }
+
+            if (ret ==null || ret.size() == 0) {
+                logger.log(String.format(
+                        "Parse TestInstanceRuns from response XML got no result. Response: %s",
+                        response.toString()));
             }
         } catch (Throwable cause) {
             logger.log(String.format(

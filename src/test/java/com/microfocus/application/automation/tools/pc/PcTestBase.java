@@ -1,28 +1,26 @@
 /*
- *
- *  Certain versions of software and/or documents (“Material”) accessible here may contain branding from
- *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
- *  the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
- *  and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE
- *  marks are the property of their respective owners.
+ * Certain versions of software and/or documents ("Material") accessible here may contain branding from
+ * Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
+ * the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
+ * and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE
+ * marks are the property of their respective owners.
  * __________________________________________________________________
  * MIT License
  *
- * © Copyright 2012-2018 Micro Focus or one of its affiliates.
+ * (c) Copyright 2012-2019 Micro Focus or one of its affiliates.
  *
  * The only warranties for products and services of Micro Focus and its affiliates
- * and licensors (“Micro Focus”) are set forth in the express warranty statements
+ * and licensors ("Micro Focus") are set forth in the express warranty statements
  * accompanying such products and services. Nothing herein should be construed as
  * constituting an additional warranty. Micro Focus shall not be liable for technical
  * or editorial errors or omissions contained herein.
  * The information contained herein is subject to change without notice.
  * ___________________________________________________________________
- *
  */
 
 package com.microfocus.application.automation.tools.pc;
 
-import com.microfocus.adm.performancecenter.plugins.common.pcEntities.*;
+import com.microfocus.adm.performancecenter.plugins.common.pcentities.*;
 
 import java.io.PrintStream;
 
@@ -30,8 +28,7 @@ public interface PcTestBase {
 
 	public static final String        SERVER_AND_PORT                 = "jenkins.server:8082";
 	public static final String        PC_SERVER_NAME                  = "pcServer.hp.com";
-    public static final String        ALM_USER_NAME                   = "sa";
-    public static final String        ALM_PASSWORD                    = "pwd";
+	public static final String        CREDENTIALSID                   = "123456789";
     public static final String        ALM_DOMAIN                      = "ALMDOM";
     public static final String        ALM_PROJECT                     = "ALMPROJ";
     public static final String        TEST_ID                         = "1";
@@ -50,13 +47,15 @@ public interface PcTestBase {
 	public static final Boolean		  IS_HTTPS					  	  = false;
 	public static final String 	  TESTINSTANCEID				= "MANUAL";
 	public static final PrintStream LOGGER					  	  = null;
+	public static final String 	  RETRY				= "NO_RETRY";
+	public static final String 	  RETRYDELAY				= "5";
+	public static final String 	  RETRYOCCURRENCES				= "3";
 
-    public static final MockPcModel   pcModel                         = new MockPcModel(SERVER_AND_PORT,PC_SERVER_NAME, ALM_USER_NAME,
-                                                                          ALM_PASSWORD, ALM_DOMAIN, ALM_PROJECT,
+    public static final MockPcModel   pcModel                         = new MockPcModel(SERVER_AND_PORT,PC_SERVER_NAME, CREDENTIALSID, ALM_DOMAIN, ALM_PROJECT,
                                                                           TEST_ID,TESTINSTANCEID, TEST_INSTANCE_ID,
                                                                           TIMESLOT_DURATION_HOURS,
                                                                           TIMESLOT_DURATION_MINUTES, POST_RUN_ACTION,
-                                                                          VUDS_MODE, DESCRIPTION,IS_HTTPS);
+                                                                          VUDS_MODE, DESCRIPTION,IS_HTTPS, RETRY, RETRYDELAY, RETRYOCCURRENCES);
     
     public static final String          runResponseEntity  = "<Run xmlns=\"http://www.hp.com/PC/REST/API\">" +
     		                                                    "<TestID>" + TEST_ID + "</TestID>" +

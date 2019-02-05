@@ -1,31 +1,29 @@
 /*
- *
- *  Certain versions of software and/or documents (“Material”) accessible here may contain branding from
- *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
- *  the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
- *  and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE
- *  marks are the property of their respective owners.
+ * Certain versions of software and/or documents ("Material") accessible here may contain branding from
+ * Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
+ * the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
+ * and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE
+ * marks are the property of their respective owners.
  * __________________________________________________________________
  * MIT License
  *
- * © Copyright 2012-2018 Micro Focus or one of its affiliates.
+ * (c) Copyright 2012-2019 Micro Focus or one of its affiliates.
  *
  * The only warranties for products and services of Micro Focus and its affiliates
- * and licensors (“Micro Focus”) are set forth in the express warranty statements
+ * and licensors ("Micro Focus") are set forth in the express warranty statements
  * accompanying such products and services. Nothing herein should be construed as
  * constituting an additional warranty. Micro Focus shall not be liable for technical
  * or editorial errors or omissions contained herein.
  * The information contained herein is subject to change without notice.
  * ___________________________________________________________________
- *
  */
 
 package com.microfocus.application.automation.tools.octane.executor;
 
 import com.hp.octane.integrations.uft.UftTestDiscoveryUtils;
 import com.hp.octane.integrations.uft.items.*;
-import com.hp.octane.integrations.util.SdkConstants;
-import com.hp.octane.integrations.util.SdkStringUtils;
+import com.hp.octane.integrations.utils.SdkConstants;
+import com.hp.octane.integrations.utils.SdkStringUtils;
 import com.microfocus.application.automation.tools.octane.executor.scmmanager.ScmPluginFactory;
 import com.microfocus.application.automation.tools.octane.executor.scmmanager.ScmPluginHandler;
 import hudson.ExtensionList;
@@ -38,9 +36,7 @@ import org.apache.commons.lang.reflect.FieldUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.xml.bind.JAXBException;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.*;
 
@@ -50,9 +46,9 @@ import java.util.*;
 public class UFTTestDetectionService {
     private static final Logger logger = LogManager.getLogger(UFTTestDetectionService.class);
     private static final String INITIAL_DETECTION_FILE = "INITIAL_DETECTION_FILE.txt";
-    private static final String DETECTION_RESULT_FILE = "detection_result.xml";
+    private static final String DETECTION_RESULT_FILE = "detection_result.json";
 
-    public static UftTestDiscoveryResult startScanning(AbstractBuild<?, ?> build, String workspaceId, String scmRepositoryId, BuildListener buildListener) {
+    public static UftTestDiscoveryResult startScanning(AbstractBuild<?, ?> build, String configurationId, String workspaceId, String scmRepositoryId, BuildListener buildListener) {
         ChangeLogSet<? extends ChangeLogSet.Entry> changeSet = build.getChangeSet();
         Object[] changeSetItems = changeSet.getItems();
         UftTestDiscoveryResult result = null;
@@ -118,10 +114,21 @@ public class UFTTestDetectionService {
             }
 
             result.setScmRepositoryId(scmRepositoryId);
+            result.setConfigurationId(configurationId);
             result.setWorkspaceId(workspaceId);
             result.setFullScan(fullScan);
+
+            //we add test runner only for discovery jobs that were created for test runners
+            ParametersAction parameterAction = build.getAction(ParametersAction.class);
+            if (parameterAction != null) {
+                ParameterValue testRunnerParameter = parameterAction.getParameter(UftConstants.TEST_RUNNER_ID_PARAMETER_NAME);
+                if (testRunnerParameter != null && testRunnerParameter.getValue() instanceof String) {
+                    result.setTestRunnerId((String) testRunnerParameter.getValue());
+                }
+            }
+
             result.sortItems();
-            publishDetectionResults(getReportXmlFile(build), buildListener, result);
+            publishDetectionResults(getDetectionResultFile(build), buildListener, result);
 
             if (result.hasChanges()) {
                 UftTestDiscoveryDispatcher dispatcher = getExtension(UftTestDiscoveryDispatcher.class);
@@ -342,8 +349,8 @@ public class UFTTestDetectionService {
 
         try {
             detectionResult.writeToFile(fileToWriteTo);
-        } catch (JAXBException e) {
-            String msg = "Failed to persist detection results because of JAXBException : " + e.getMessage();
+        } catch (Exception e) {
+            String msg = "Failed to persist detection results : " + e.getMessage();
             if (taskListenerLog != null) {
                 taskListenerLog.error(msg);
             }
@@ -353,16 +360,17 @@ public class UFTTestDetectionService {
 
     public static UftTestDiscoveryResult readDetectionResults(Run run) {
 
-        File file = getReportXmlFile(run);
+        File file = getDetectionResultFile(run);
 
         try {
             return UftTestDiscoveryResult.readFromFile(file);
-        } catch (JAXBException | FileNotFoundException e) {
+        } catch (IOException e) {
+            logger.error("Failed to read detection results : " + e.getMessage());
             return null;
         }
     }
 
-    public static File getReportXmlFile(Run run) {
+    public static File getDetectionResultFile(Run run) {
         return new File(run.getRootDir(), DETECTION_RESULT_FILE);
     }
 }

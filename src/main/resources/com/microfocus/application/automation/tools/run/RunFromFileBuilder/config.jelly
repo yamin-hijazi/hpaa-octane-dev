@@ -8,7 +8,7 @@
   ~ __________________________________________________________________
   ~ MIT License
   ~
-  ~ © Copyright 2012-2018 Micro Focus or one of its affiliates.
+  ~ © Copyright 2012-2019 Micro Focus or one of its affiliates..
   ~
   ~ The only warranties for products and services of Micro Focus and its affiliates
   ~ and licensors (“Micro Focus”) are set forth in the express warranty statements
@@ -24,6 +24,9 @@
          xmlns:cv="/lib/custom">
     <st:bind var="a" value="${descriptor}"/>
 
+    <st:bind var="fsTests" value="${instance.runFromFileModel.fsTests}"/>
+    <st:bind var="cleanupTests" value="${instance.runFromFileModel.cleanupTests}"/>
+
     <tr>
       <td/>
       <td colspan="2">
@@ -34,24 +37,21 @@
       <td/>
     </tr>
 
-    <script type="text/javascript">
-        function useAuthentication(obj){
-            if(obj.checked){
-                document.getElementsByName("runfromfs.fsProxyUserName")[0].disabled=null;
-                document.getElementsByName("runfromfs.fsProxyPassword")[0].disabled=null;
-            }else{
-                document.getElementsByName("runfromfs.fsProxyUserName")[0].disabled="true";
-                document.getElementsByName("runfromfs.fsProxyPassword")[0].disabled="true";
-            }
-        }
-    </script>
+
+    <!--script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/jquery-ui.min.js"/-->
+
     <script type="text/javascript" src="${rootURL}/plugin/hp-application-automation-tools-plugin/configure.js"/>
     <script type="text/javascript" src="${rootURL}/plugin/hp-application-automation-tools-plugin/parallelRunnerEnvironment.js"/>
+    <script type="text/javascript" src="${rootURL}/plugin/hp-application-automation-tools-plugin/js/utils.js"/>
 
     <link rel="stylesheet" type="text/css" href="${rootURL}/plugin/hp-application-automation-tools-plugin/css/PARALLEL_RUNNER_UI.css"/>
 
     <f:entry title="Tests" field="fsTests">
         <f:expandableTextbox name="runfromfs.fsTests" value="${instance.runFromFileModel.fsTests}"/>
+    </f:entry>
+
+    <f:entry title="Results directory" field="fsReportPath">
+        <f:textbox name="runfromfs.fsReportPath" value="${instance.runFromFileModel.fsReportPath}"/>
     </f:entry>
 
     <cv:customOptionalBlock title="UFT parallel running mode." name="runfromfs.isParallelRunnerEnabled"
@@ -70,13 +70,19 @@
 		    <f:entry title="Run Mode" field="fsUftRunMode">
 				<select name="runPipeline.fsUftRunMode">
 					<j:forEach var="runMode" items="${instance.runFromFileModel.fsUftRunModes}">
-						<f:option selected="${runMode.value == instance.RunFromFileSystemModel.fsUftRunMode}" value="${runMode.value}">
+						<f:option selected="${runMode.value == instance.runFromFileModel.fsUftRunMode}" value="${runMode.value}">
 							${runMode.description}
 						</f:option>
 					</j:forEach>
 				</select>
 			</f:entry>
-    	</f:section>
+        </f:section>
+
+        <f:section>
+            <f:entry field="uftSettingsModel">
+                <f:property field="uftSettingsModel"/>
+            </f:entry>
+        </f:section>
     </f:advanced>
 	
     <f:advanced title="LoadRunner-Specific Settings">
@@ -90,13 +96,23 @@
 			<f:entry title="Errors to Ignore" field="ignoreErrorStrings">
 				<f:textarea name="runfromfs.ignoreErrorStrings" value="${instance.runFromFileModel.ignoreErrorStrings}"  />
 			</f:entry>
-      <f:entry title="Analysis Template" field="analysisTemplate">
-        <f:textbox name="runPipeline.analysisTemplate" value="${instance.runFromFileModel.analysisTemplate}" default=""/>
-      </f:entry>
-			<f:entry title="Display Controller" field="displayController">
-        <f:checkbox name="runfromfs.displayController" checked="${instance.runFromFileModel.displayController}"/>
-      </f:entry>
-    	</f:section>
+            <f:entry title="Analysis Template" field="analysisTemplate">
+                <f:textbox name="runPipeline.analysisTemplate" value="${instance.runFromFileModel.analysisTemplate}" default=""/>
+            </f:entry>
+            <f:entry title="Display Controller" field="displayController">
+                <f:checkbox name="runfromfs.displayController" checked="${instance.runFromFileModel.displayController}"/>
+            </f:entry>
+            <f:section title="${%SummaryDataLog}">
+                <f:entry name="Summary Data Log Model" field="summaryDataLogModel">
+                    <f:property field="summaryDataLogModel" />
+                </f:entry>
+            </f:section>
+            <f:section title="${%RuntimeSettings}">
+                <f:entry name="Runtime Settings" field="scriptRTSSetModel">
+                    <f:property field="scriptRTSSetModel"/>
+                </f:entry>
+            </f:section>
+        </f:section>
     </f:advanced>
 
     <!-- add MC server and app info starting -->
@@ -112,7 +128,7 @@
                     </select>
                 </f:entry>
                 <f:entry>
-                    <f:checkbox title="Use SSL" name="runfromfs.useSSL" checked="${instance.runFromFileModel.useSSL}"/>
+                    <f:checkbox title="Use SSL" name="runfromfs.useSSL" checked="${instance.runFromFileModel.useSSL}" default="true"/>
                 </f:entry>
                 <f:entry title="User name" field="fsUserName">
                     <f:textbox name="runfromfs.fsUserName" value="${instance.runFromFileModel.fsUserName}"/>
@@ -171,15 +187,19 @@
                 <f:entry title="Device metrics" field="fsDevicesMetrics">
                         <f:textbox name="runfromfs.fsDevicesMetrics" readonly = "true" value="${instance.runFromFileModel.fsDevicesMetrics}"/>
                 </f:entry>
+                <f:entry title="Job Id">
+                        <f:textbox name="runfromfs.fsJobId" readonly = "true" value="${instance.runFromFileModel.fsJobId}"/>
+                </f:entry>
+                <f:entry>
+                        <f:checkbox title="Recreate Mobile Center job if this job is copied from another job" name="runfromfs.recreateJob" checked="false"/>
+                </f:entry>
                 <f:entry>
                         <input id="wizard" type="button" value="wizard" onClick="load(a,'/integration/#/login?jobId=')"/>
                 </f:entry>
                 <f:entry>
                         <div id="errorMessage" style="color:red;display:none">MC login information or proxy is incorrect.</div>
                 </f:entry>
-                <f:invisibleEntry>
-                		<f:textbox name="runfromfs.fsJobId" value="${instance.runFromFileModel.fsJobId}"/>
-                </f:invisibleEntry>
+
             </f:section>
         </f:advanced>
     <!-- end -->
