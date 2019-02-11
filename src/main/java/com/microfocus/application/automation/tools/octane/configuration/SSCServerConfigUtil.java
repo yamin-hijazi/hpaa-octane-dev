@@ -30,6 +30,8 @@ import org.apache.logging.log4j.Logger;
 
 import java.lang.reflect.Field;
 
+import static com.microfocus.application.automation.tools.octane.configuration.ReflectionUtils.getFieldValue;
+
 /*
     Utility to help retrieving the configuration of the SSC Server URL and SSC project/version pair
  */
@@ -67,24 +69,6 @@ public class SSCServerConfigUtil {
 		String projectVersion = getFieldValue(fprPublisher, "projectVersion");
 		if (projectName != null && !projectName.isEmpty() && projectVersion != null && !projectVersion.isEmpty()) {
 			return new SSCProjectVersionPair(projectName, projectVersion);
-		}
-		return null;
-	}
-
-	private static String getFieldValue(Object someObject, String fieldName) {
-		for (Field field : someObject.getClass().getDeclaredFields()) {
-			field.setAccessible(true);
-			if (field.getName().equals(fieldName)) {
-				Object value = null;
-				try {
-					value = field.get(someObject);
-				} catch (IllegalAccessException e) {
-					logger.error("Failed to getFieldValue", e);
-				}
-				if (value != null) {
-					return value.toString();
-				}
-			}
 		}
 		return null;
 	}

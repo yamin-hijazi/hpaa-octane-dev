@@ -24,6 +24,7 @@ import com.hp.octane.integrations.OctaneSDK;
 import com.hp.octane.integrations.services.vulnerabilities.ToolType;
 import com.microfocus.application.automation.tools.model.OctaneServerSettingsModel;
 import com.microfocus.application.automation.tools.octane.configuration.ConfigurationService;
+import com.microfocus.application.automation.tools.octane.configuration.FodConfigUtil;
 import com.microfocus.application.automation.tools.octane.configuration.SSCServerConfigUtil;
 import com.microfocus.application.automation.tools.octane.tests.build.BuildHandlerUtils;
 import hudson.Extension;
@@ -43,39 +44,54 @@ public class VulnerabilitiesListener extends RunListener<AbstractBuild> {
 
 	@Override
 	public void onFinalized(AbstractBuild build) {
-		String sscServerUrl = SSCServerConfigUtil.getSSCServer();
-		if (sscServerUrl == null || sscServerUrl.isEmpty()) {
-			logger.debug("SSC configuration not found in the whole CI Server");
-			return;
-		}
+
+
 		SSCServerConfigUtil.SSCProjectVersionPair projectVersionPair = SSCServerConfigUtil.getProjectConfigurationFromBuild(build);
-		if (projectVersionPair == null) {
-			logger.warn("SSC configuration not found in " + build);
-			return;
-		}
+        if (projectVersionPair != null) {
+            String sscServerUrl = SSCServerConfigUtil.getSSCServer();
+            if (sscServerUrl == null || sscServerUrl.isEmpty()) {
+                logger.debug("SSC configuration not found in the whole CI Server");
+                return;
+            }
+            insertQueueItem(build, ToolType.SSC);
+            return;
+        }
 
-		String jobCiId = BuildHandlerUtils.getJobCiId(build);
-		String buildCiId = BuildHandlerUtils.getBuildCiId(build);
+        Long release = FodConfigUtil.getProjectConfigurationFromBuild(build);
+        if(release != null) {
+            insertFODQueueItem(build);
+        }
+        logger.warn("SSC configuration not found in " + build);
+        return;
 
-		//  [YG]: TODO productize the below code to be able to override the global maxTimeoutHours by Job's own configuration
+	}
+
+    private void insertFODQueueItem(AbstractBuild build) {
+        insertQueueItem(build, ToolType.SSC);
+    }
+
+    private void insertQueueItem(AbstractBuild build, ToolType toolType) {
+        String jobCiId = BuildHandlerUtils.getJobCiId(build);
+        String buildCiId = BuildHandlerUtils.getBuildCiId(build);
+
+        //  [YG]: TODO productize the below code to be able to override the global maxTimeoutHours by Job's own configuration
 //		long queueItemTimeout = 0;
 //		ParametersAction parameters = run.getAction(ParametersAction.class);
 //		if (parameters != null && parameters.getParameter("some-predefined-value") != null) {
 //			queueItemTimeout = Long.parseLong((String) parameters.getParameter("some-predefined-value").getValue());
 //		}
 
-		OctaneSDK.getClients().forEach(octaneClient -> {
-			String instanceId = octaneClient.getInstanceId();
-			OctaneServerSettingsModel settings = ConfigurationService.getSettings(instanceId);
-			if (settings != null && !settings.isSuspend()) {
-				octaneClient.getVulnerabilitiesService().enqueueRetrieveAndPushVulnerabilities(
-						jobCiId,
-						buildCiId,
-						ToolType.SSC,
-						build.getStartTimeInMillis(),
-						settings.getMaxTimeoutHours(),
-						null);
-			}
-		});
-	}
+        OctaneSDK.getClients().forEach(octaneClient -> {
+            String instanceId = octaneClient.getInstanceId();
+            OctaneServerSettingsModel settings = ConfigurationService.getSettings(instanceId);
+            if (settings != null && !settings.isSuspend()) {
+                octaneClient.getVulnerabilitiesService().enqueueRetrieveAndPushVulnerabilities(
+                        jobCiId,
+                        buildCiId, toolType,
+                        build.getStartTimeInMillis(),
+                        settings.getMaxTimeoutHours(),
+                        null);
+            }
+        });
+    }
 }
