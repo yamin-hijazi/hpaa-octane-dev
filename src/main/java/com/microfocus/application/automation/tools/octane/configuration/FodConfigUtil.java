@@ -34,7 +34,7 @@ public class FodConfigUtil {
 
     }
 
-    public static Long getProjectConfigurationFromBuild(AbstractBuild build) {
+    public static Long getFODReleaseFromBuild(AbstractBuild build) {
         return build != null ? getRelease(build.getProject()) : null;
     }
     private static Long getRelease(AbstractProject project) {
@@ -49,6 +49,9 @@ public class FodConfigUtil {
     private static Long getReleaseByReflection(Object fodPublisher) {
 
         Object modelObj = getFieldValue(fodPublisher, "model");
+        if(modelObj == null){
+            return null;
+        }
         String bsiToken = getFieldValue(modelObj, "bsiTokenOriginal");
         return parseBSITokenAndGetReleaseId(bsiToken);
     }

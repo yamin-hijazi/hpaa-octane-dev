@@ -57,13 +57,11 @@ public class VulnerabilitiesListener extends RunListener<AbstractBuild> {
             return;
         }
 
-        Long release = FodConfigUtil.getProjectConfigurationFromBuild(build);
+        Long release = FodConfigUtil.getFODReleaseFromBuild(build);
         if(release != null) {
             insertFODQueueItem(build);
         }
         logger.warn("SSC configuration not found in " + build);
-        return;
-
 	}
 
     private void insertFODQueueItem(AbstractBuild build) {

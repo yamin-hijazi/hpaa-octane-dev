@@ -63,7 +63,6 @@ import hudson.console.PlainTextConsoleOutputStream;
 import hudson.model.*;
 import hudson.security.ACL;
 import hudson.security.ACLContext;
-import jenkins.branch.OrganizationFolder;
 import jenkins.model.Jenkins;
 import org.acegisecurity.AccessDeniedException;
 import org.apache.commons.fileupload.FileItem;
@@ -394,15 +393,14 @@ public class CIJenkinsServicesImpl extends CIPluginServices {
             Run run = getRunByRefNames(jobId, buildId);
             if (run instanceof AbstractBuild) {
 				FodConfigUtil.ServerConnectConfig fodServerConfig = FodConfigUtil.getFODServerConfig();
-                Long releaseId = FodConfigUtil.getProjectConfigurationFromBuild((AbstractBuild) run);
+                Long releaseId = FodConfigUtil.getFODReleaseFromBuild((AbstractBuild) run);
                 if (fodServerConfig != null &&  releaseId != null) {
-					FodProjectConfiguration result = dtoFactory.newDTO(FodProjectConfiguration.class)
+					return dtoFactory.newDTO(FodProjectConfiguration.class)
                            .setClientId(fodServerConfig.clientId)
 							.setClientSecret(fodServerConfig.clientSecret)
                             .setApiUrl(fodServerConfig.apiUrl)
 							.setBaseUrl(fodServerConfig.baseUrl)
                             .setReleaseId(releaseId);
-					return result;
                 }
             } else {
                 logger.error("build '" + jobId + " #" + buildId + "' (of specific type AbstractBuild) not found");
