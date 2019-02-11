@@ -57,6 +57,13 @@ public class FodConfigUtil {
     }
 
     private static Long parseBSITokenAndGetReleaseId(String bsiToken) {
-        return null;
+        //https://api.sandbox.fortify.com/bsi2.aspx?tid=159&tc=Octane&pv=3059&payloadType=ANALYSIS_PAYLOAD&astid=25&ts=JS%2fXML%2fHTML
+        if(bsiToken == null){
+            return null;
+        }
+        String releaseString = bsiToken.substring(bsiToken.indexOf("=",bsiToken.indexOf("pv"))+1,
+                bsiToken.indexOf("&",
+                        bsiToken.indexOf("pv")));
+        return Long.valueOf(releaseString);
     }
 }

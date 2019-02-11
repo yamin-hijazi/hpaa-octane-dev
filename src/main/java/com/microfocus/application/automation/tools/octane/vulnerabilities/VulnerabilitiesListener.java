@@ -65,7 +65,7 @@ public class VulnerabilitiesListener extends RunListener<AbstractBuild> {
 	}
 
     private void insertFODQueueItem(AbstractBuild build) {
-        insertQueueItem(build, ToolType.SSC);
+        insertQueueItem(build, ToolType.FOD);
     }
 
     private void insertQueueItem(AbstractBuild build, ToolType toolType) {
