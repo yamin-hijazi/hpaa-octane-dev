@@ -1,10 +1,16 @@
 package com.microfocus.application.automation.tools.octane.configuration;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.TypeFactory;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Descriptor;
 import hudson.tasks.Publisher;
 import jenkins.model.Jenkins;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.binary.StringUtils;
+import java.io.IOException;
+import java.util.Map;
 
 import static com.microfocus.application.automation.tools.octane.configuration.ReflectionUtils.getFieldValue;
 
@@ -57,6 +63,29 @@ public class FodConfigUtil {
     }
 
     private static Long parseBSITokenAndGetReleaseId(String bsiToken) {
+        try {
+            return handleURLFormat(bsiToken);
+        }catch (Exception e){
+            return handleBase64Format(bsiToken);
+        }
+    }
+
+    private static Long handleBase64Format(String bsiToken)  {
+
+        String bsi64 = StringUtils.newStringUtf8(Base64.decodeBase64(bsiToken));
+        try {
+            Map bsiJsonAsMap = new ObjectMapper().readValue(bsi64,
+                    TypeFactory.defaultInstance().constructType(Map.class));
+            return Long.valueOf(bsiJsonAsMap.get("releaseId").toString());
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+    }
+
+    private static Long handleURLFormat(String bsiToken) {
         //https://api.sandbox.fortify.com/bsi2.aspx?tid=159&tc=Octane&pv=3059&payloadType=ANALYSIS_PAYLOAD&astid=25&ts=JS%2fXML%2fHTML
         if(bsiToken == null){
             return null;
