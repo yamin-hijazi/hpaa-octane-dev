@@ -68,6 +68,14 @@ public class SSCServerConfigUtil {
 		if (projectName != null && !projectName.isEmpty() && projectVersion != null && !projectVersion.isEmpty()) {
 			return new SSCProjectVersionPair(projectName, projectVersion);
 		}
+		//18.20.1071 version.
+		Object uploadSSC = getFieldValueAsObj(fprPublisher, "uploadSSC");
+		projectName = getFieldValue(uploadSSC, "projectName");
+		projectVersion = getFieldValue(uploadSSC, "projectVersion");
+
+		if (projectName != null && !projectName.isEmpty() && projectVersion != null && !projectVersion.isEmpty()) {
+			return new SSCProjectVersionPair(projectName, projectVersion);
+		}
 		return null;
 	}
 
@@ -83,6 +91,20 @@ public class SSCServerConfigUtil {
 				}
 				if (value != null) {
 					return value.toString();
+				}
+			}
+		}
+		return null;
+	}
+	private static Object getFieldValueAsObj(Object someObject, String fieldName) {
+		for (Field field : someObject.getClass().getDeclaredFields()) {
+			field.setAccessible(true);
+			if (field.getName().equals(fieldName)) {
+				Object value = null;
+				try {
+					return field.get(someObject);
+				} catch (IllegalAccessException e) {
+					logger.error("Failed to getFieldValue", e);
 				}
 			}
 		}
