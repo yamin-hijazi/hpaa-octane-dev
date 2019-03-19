@@ -100,7 +100,6 @@ public class SSCServerConfigUtil {
 		for (Field field : someObject.getClass().getDeclaredFields()) {
 			field.setAccessible(true);
 			if (field.getName().equals(fieldName)) {
-				Object value = null;
 				try {
 					return field.get(someObject);
 				} catch (IllegalAccessException e) {
