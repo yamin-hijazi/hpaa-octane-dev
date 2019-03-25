@@ -68,11 +68,17 @@ public class SSCServerConfigUtil {
 		if (projectName != null && !projectName.isEmpty() && projectVersion != null && !projectVersion.isEmpty()) {
 			return new SSCProjectVersionPair(projectName, projectVersion);
 		}
+		logger.warn("Version seems to be 18.20.1071 or higher");
 		//18.20.1071 version.
 		Object uploadSSC = getFieldValueAsObj(fprPublisher, "uploadSSC");
-		projectName = getFieldValue(uploadSSC, "projectName");
-		projectVersion = getFieldValue(uploadSSC, "projectVersion");
-
+		if(uploadSSC == null){
+			logger.warn("uploadSSC section was not found");
+		}else {
+			logger.warn("uploadSSC was found ");
+			projectName = getFieldValue(uploadSSC, "projectName");
+			projectVersion = getFieldValue(uploadSSC, "projectVersion");
+			logger.warn("projectName" + projectName + " , ProjectVersion" + projectVersion);
+		}
 		if (projectName != null && !projectName.isEmpty() && projectVersion != null && !projectVersion.isEmpty()) {
 			return new SSCProjectVersionPair(projectName, projectVersion);
 		}
