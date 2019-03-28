@@ -117,7 +117,17 @@ public class SSCServerConfigUtil {
 	}
 
 	private static Descriptor getSSCDescriptor() {
-		return Jenkins.getInstance().getDescriptorByName("com.fortify.plugin.jenkins.FPRPublisher");
+		Descriptor publisher = Jenkins.getInstance().getDescriptorByName("com.fortify.plugin.jenkins.FPRPublisher");
+		if(publisher == null){
+			//18.20 version and above.
+			logger.debug("didn't find Old SSC FPRPublisher");
+			Descriptor plugin = Jenkins.getInstance().getDescriptorByName("com.fortify.plugin.jenkins.FortifyPlugin");
+			if(plugin == null){
+				logger.debug("didn't find Fortify Plugin of 18.20 version and above");
+			}
+			return plugin;
+		}
+		return publisher;
 	}
 
 	public static final class SSCProjectVersionPair {
