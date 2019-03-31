@@ -44,9 +44,7 @@ public class VulnerabilitiesListener extends RunListener<AbstractBuild> {
 
 	@Override
 	public void onFinalized(AbstractBuild build) {
-
-
-		SSCServerConfigUtil.SSCProjectVersionPair projectVersionPair = SSCServerConfigUtil.getProjectConfigurationFromBuild(build);
+        SSCServerConfigUtil.SSCProjectVersionPair projectVersionPair = SSCServerConfigUtil.getProjectConfigurationFromBuild(build);
         if (projectVersionPair != null) {
             logger.warn("SSC configuration was found in " + build);
             String sscServerUrl = SSCServerConfigUtil.getSSCServer();
