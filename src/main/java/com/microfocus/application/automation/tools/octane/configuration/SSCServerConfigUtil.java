@@ -30,6 +30,8 @@ import org.apache.logging.log4j.Logger;
 
 import java.lang.reflect.Field;
 
+import static com.microfocus.application.automation.tools.octane.configuration.ReflectionUtils.getFieldValue;
+
 /*
     Utility to help retrieving the configuration of the SSC Server URL and SSC project/version pair
  */
