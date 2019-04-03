@@ -33,6 +33,9 @@ import hudson.model.listeners.RunListener;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Jenkins events life cycle listener for processing vulnerabilities scan results on build completed
  */
@@ -52,24 +55,26 @@ public class VulnerabilitiesListener extends RunListener<AbstractBuild> {
                 logger.debug("SSC configuration not found in the whole CI Server");
                 return;
             }
-            insertQueueItem(build, ToolType.SSC);
+            insertQueueItem(build, ToolType.SSC, null);
         }
 
         Long release = FodConfigUtil.getFODReleaseFromBuild(build);
         if(release != null) {
             logger.warn("FOD configuration was found in " + build);
-            insertFODQueueItem(build);
+            insertFODQueueItem(build, release);
         }
         if(projectVersionPair == null && release == null) {
             logger.warn("No Security Scan integration configuration was found " + build);
         }
 	}
 
-    private void insertFODQueueItem(AbstractBuild build) {
-        insertQueueItem(build, ToolType.FOD);
+    private void insertFODQueueItem(AbstractBuild build, Long releaseId ) {
+        HashMap<String,String> additionalProperties = new HashMap<>();
+        additionalProperties.put("releaseId", releaseId.toString());
+        insertQueueItem(build, ToolType.FOD, additionalProperties);
     }
 
-    private void insertQueueItem(AbstractBuild build, ToolType toolType) {
+    private void insertQueueItem(AbstractBuild build, ToolType toolType, Map<String,String> props) {
         String jobCiId = BuildHandlerUtils.getJobCiId(build);
         String buildCiId = BuildHandlerUtils.getBuildCiId(build);
 
@@ -89,7 +94,7 @@ public class VulnerabilitiesListener extends RunListener<AbstractBuild> {
                         buildCiId, toolType,
                         build.getStartTimeInMillis(),
                         settings.getMaxTimeoutHours(),
-                        null);
+                        props);
             }
         });
     }
