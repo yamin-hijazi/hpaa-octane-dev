@@ -57,11 +57,17 @@ public class SSCServerConfigUtil {
 
 	private static SSCProjectVersionPair getProjectVersion(AbstractProject project) {
 		for (Object publisher : project.getPublishersList()) {
-			if (publisher instanceof Publisher && "com.fortify.plugin.jenkins.FPRPublisher".equals(publisher.getClass().getName())) {
+			if (publisher instanceof Publisher &&
+					isSSCPublisher(publisher.getClass().getName())) {
 				return getProjectNameByReflection(publisher);
 			}
 		}
 		return null;
+	}
+
+	private static boolean isSSCPublisher(String publisherName) {
+		return "com.fortify.plugin.jenkins.FortifyPlugin".equals(publisherName) ||
+		"com.fortify.plugin.jenkins.FPRPublisher".equals(publisherName);
 	}
 
 	private static SSCProjectVersionPair getProjectNameByReflection(Object fprPublisher) {
