@@ -29,12 +29,19 @@ import hudson.tasks.Publisher;
 import jenkins.model.Jenkins;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.IOException;
 import java.util.Map;
 
 import static com.microfocus.application.automation.tools.octane.configuration.ReflectionUtils.getFieldValue;
 
 public class FodConfigUtil {
+    private final static Logger logger = LogManager.getLogger(FodConfigUtil.class);
+
+    public final static String FOD_DESCRIPTOR = "org.jenkinsci.plugins.fodupload.FodGlobalDescriptor";
+    public final static String FOD_STATIC_ASSESSMENT_STEP = "org.jenkinsci.plugins.fodupload.StaticAssessmentBuildStep";
 
     public static class ServerConnectConfig {
         public String baseUrl;
@@ -56,7 +63,7 @@ public class FodConfigUtil {
         return serverConnectConfig;
     }
     private static Descriptor getFODDescriptor() {
-        return Jenkins.getInstance().getDescriptorByName("org.jenkinsci.plugins.fodupload.FodGlobalDescriptor");
+        return Jenkins.getInstance().getDescriptorByName(FOD_DESCRIPTOR);
 
     }
 
@@ -65,7 +72,8 @@ public class FodConfigUtil {
     }
     private static Long getRelease(AbstractProject project) {
         for (Object publisher : project.getPublishersList()) {
-            if (publisher instanceof Publisher && "org.jenkinsci.plugins.fodupload.StaticAssessmentBuildStep".equals(publisher.getClass().getName())) {
+            if (publisher instanceof Publisher &&
+                    FOD_STATIC_ASSESSMENT_STEP.equals(publisher.getClass().getName())) {
                 return getReleaseByReflection(publisher);
             }
         }
@@ -99,7 +107,7 @@ public class FodConfigUtil {
             return Long.valueOf(bsiJsonAsMap.get("releaseId").toString());
 
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("failed to read the BSI token base64:" + e.getMessage());
             return null;
         }
 

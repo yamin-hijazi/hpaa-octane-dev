@@ -39,6 +39,8 @@ import static com.microfocus.application.automation.tools.octane.configuration.R
 public class SSCServerConfigUtil {
 
 	private static final Logger logger = LogManager.getLogger(SSCServerConfigUtil.class);
+    public static final String PUBLISHER_NEW_NAME = "com.fortify.plugin.jenkins.FortifyPlugin";
+	public static final String PUBLISHER_OLD_VERSION = "com.fortify.plugin.jenkins.FPRPublisher";
 
 	public static String getSSCServer() {
 		Descriptor sscDescriptor = getSSCDescriptor();
@@ -66,8 +68,8 @@ public class SSCServerConfigUtil {
 	}
 
 	private static boolean isSSCPublisher(String publisherName) {
-		return "com.fortify.plugin.jenkins.FortifyPlugin".equals(publisherName) ||
-		"com.fortify.plugin.jenkins.FPRPublisher".equals(publisherName);
+		return PUBLISHER_NEW_NAME.equals(publisherName) ||
+				PUBLISHER_OLD_VERSION.equals(publisherName);
 	}
 
 	private static SSCProjectVersionPair getProjectNameByReflection(Object fprPublisher) {
@@ -125,11 +127,11 @@ public class SSCServerConfigUtil {
 	}
 
 	private static Descriptor getSSCDescriptor() {
-		Descriptor publisher = Jenkins.getInstance().getDescriptorByName("com.fortify.plugin.jenkins.FPRPublisher");
+		Descriptor publisher = Jenkins.getInstance().getDescriptorByName(PUBLISHER_OLD_VERSION);
 		if(publisher == null){
 			//18.20 version and above.
 			logger.debug("didn't find Old SSC FPRPublisher");
-			Descriptor plugin = Jenkins.getInstance().getDescriptorByName("com.fortify.plugin.jenkins.FortifyPlugin");
+			Descriptor plugin = Jenkins.getInstance().getDescriptorByName(PUBLISHER_NEW_NAME);
 			if(plugin == null){
 				logger.debug("didn't find Fortify Plugin of 18.20 version and above");
 			}
